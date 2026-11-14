@@ -33,7 +33,7 @@ logs:
 
 # --- Portfolio targets ---
 
-.PHONY: p1 p1-test p2 p2-seed p2-baseline p2-optimise p2-benchmark p3 p4 p5
+.PHONY: p1 p1-test p2 p2-seed p2-baseline p2-optimise p2-benchmark p3 p3-acid p4 p5
 
 p1:
 	@echo "Portfolio 1: Applying schema to clean database..."
@@ -72,9 +72,18 @@ p2-benchmark:
 	@echo "Portfolio 2: Running query benchmarking suite (3-run median)..."
 	.venv/bin/python3 portfolio-2-query-optimisation/scripts/benchmark.py
 
-p3:
-	@echo "Portfolio 3: Transactions and Concurrency"
-	@echo "TODO: implement"
+p3: p3-acid
+	@echo "Portfolio 3: Transactions and Concurrency milestone executions ready."
+
+p3-acid:
+	@echo "Portfolio 3: Running ACID transaction and rollback demonstrations..."
+	docker compose exec -T postgres psql -U $(POSTGRES_USER) -d $(POSTGRES_DB) \
+		< portfolio-3-transactions-concurrency/sql/01_booking_transaction.sql \
+		> portfolio-3-transactions-concurrency/evidence/01_booking_transaction_output.txt 2>&1
+	docker compose exec -T postgres psql -U $(POSTGRES_USER) -d $(POSTGRES_DB) \
+		< portfolio-3-transactions-concurrency/sql/02_rollback_scenarios.sql \
+		> portfolio-3-transactions-concurrency/evidence/02_rollback_scenarios_output.txt 2>&1
+	@echo "Portfolio 3: ACID evidence written to portfolio-3-transactions-concurrency/evidence/"
 
 p4:
 	@echo "Portfolio 4: NoSQL and Advanced Data Models"
