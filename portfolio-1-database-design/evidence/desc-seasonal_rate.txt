@@ -1,0 +1,21 @@
+                                                                     Table "public.seasonal_rate"
+     Column      |         Type          | Collation | Nullable |                    Default                     | Storage  | Compression | Stats target | Description 
+-----------------+-----------------------+-----------+----------+------------------------------------------------+----------+-------------+--------------+-------------
+ rate_id         | integer               |           | not null | nextval('seasonal_rate_rate_id_seq'::regclass) | plain    |             |              | 
+ hotel_id        | integer               |           | not null |                                                | plain    |             |              | 
+ room_type_id    | integer               |           | not null |                                                | plain    |             |              | 
+ season_name     | character varying(50) |           | not null |                                                | extended |             |              | 
+ start_date      | date                  |           | not null |                                                | plain    |             |              | 
+ end_date        | date                  |           | not null |                                                | plain    |             |              | 
+ price_per_night | numeric(12,2)         |           | not null |                                                | main     |             |              | 
+Indexes:
+    "seasonal_rate_pkey" PRIMARY KEY, btree (rate_id)
+    "idx_seasonal_rate_hotel_type" btree (hotel_id, room_type_id)
+Check constraints:
+    "chk_season_dates" CHECK (end_date > start_date)
+    "seasonal_rate_price_per_night_check" CHECK (price_per_night > 0::numeric)
+Foreign-key constraints:
+    "seasonal_rate_hotel_id_fkey" FOREIGN KEY (hotel_id) REFERENCES hotel(hotel_id) ON DELETE CASCADE
+    "seasonal_rate_room_type_id_fkey" FOREIGN KEY (room_type_id) REFERENCES room_type(room_type_id) ON DELETE CASCADE
+Access method: heap
+

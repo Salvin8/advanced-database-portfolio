@@ -1,0 +1,17 @@
+                                              List of relations
+ Schema |        Name         | Type  |    Owner    | Persistence | Access method |    Size    | Description 
+--------+---------------------+-------+-------------+-------------+---------------+------------+-------------
+ public | audit_log           | table | hotel_admin | permanent   | heap          | 8192 bytes | 
+ public | booking             | table | hotel_admin | permanent   | heap          | 8192 bytes | 
+ public | booking_room        | table | hotel_admin | permanent   | heap          | 8192 bytes | 
+ public | check_in_out        | table | hotel_admin | permanent   | heap          | 0 bytes    | 
+ public | guest               | table | hotel_admin | permanent   | heap          | 0 bytes    | 
+ public | hotel               | table | hotel_admin | permanent   | heap          | 8192 bytes | 
+ public | payment             | table | hotel_admin | permanent   | heap          | 0 bytes    | 
+ public | room                | table | hotel_admin | permanent   | heap          | 0 bytes    | 
+ public | room_status_history | table | hotel_admin | permanent   | heap          | 8192 bytes | 
+ public | room_type           | table | hotel_admin | permanent   | heap          | 8192 bytes | 
+ public | seasonal_rate       | table | hotel_admin | permanent   | heap          | 0 bytes    | 
+ public | staff               | table | hotel_admin | permanent   | heap          | 0 bytes    | 
+(12 rows)
+

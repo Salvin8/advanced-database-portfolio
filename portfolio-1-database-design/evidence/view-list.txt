@@ -1,0 +1,9 @@
+                                                                                                                                    List of relations
+ Schema |          Name           | Type |    Owner    | Persistence |  Size   |                                                                                               Description                                                                                               
+--------+-------------------------+------+-------------+-------------+---------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ public | v_current_room_status   | view | hotel_admin | permanent   | 0 bytes | Current housekeeping status of each active room. The latest entry from room_status_history wins; rooms with no history show as clean.
+ public | v_daily_occupancy       | view | hotel_admin | permanent   | 0 bytes | Per-hotel occupancy for today: total rooms, occupied, available, and occupancy percentage. Uses only active rooms and active bookings.
+ public | v_guest_booking_summary | view | hotel_admin | permanent   | 0 bytes | Guest booking history with payment totals, balance due, room count, and stay date range. One row per booking.
+ public | v_room_availability     | view | hotel_admin | permanent   | 0 bytes | Active rooms with a boolean flag indicating availability for today. Filter by hotel_id and/or room_type. For arbitrary date ranges, query booking_room with a daterange overlap (&&) condition instead.
+(4 rows)
+

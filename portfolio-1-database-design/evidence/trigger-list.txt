@@ -1,0 +1,8 @@
+       trigger_name       | event_object_table | event_manipulation | action_timing 
+--------------------------+--------------------+--------------------+---------------
+ trg_audit_booking_status | booking            | UPDATE             | AFTER
+ trg_booking_updated_at   | booking            | UPDATE             | BEFORE
+ trg_guest_updated_at     | guest              | UPDATE             | BEFORE
+ trg_hotel_updated_at     | hotel              | UPDATE             | BEFORE
+(4 rows)
+

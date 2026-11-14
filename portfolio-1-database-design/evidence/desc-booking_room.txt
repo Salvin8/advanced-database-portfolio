@@ -1,0 +1,30 @@
+                                                                                       Table "public.booking_room"
+     Column      |         Type          | Collation | Nullable |                                      Default                                      | Storage  | Compression | Stats target | Description 
+-----------------+-----------------------+-----------+----------+-----------------------------------------------------------------------------------+----------+-------------+--------------+-------------
+ booking_room_id | integer               |           | not null | nextval('booking_room_booking_room_id_seq'::regclass)                             | plain    |             |              | 
+ booking_id      | integer               |           | not null |                                                                                   | plain    |             |              | 
+ room_id         | integer               |           | not null |                                                                                   | plain    |             |              | 
+ check_in_date   | date                  |           | not null |                                                                                   | plain    |             |              | 
+ check_out_date  | date                  |           | not null |                                                                                   | plain    |             |              | 
+ stay            | daterange             |           |          | generated always as (daterange(check_in_date, check_out_date, '[)'::text)) stored | extended |             |              | 
+ rate_per_night  | numeric(12,2)         |           | not null |                                                                                   | main     |             |              | 
+ num_guests      | smallint              |           | not null | 1                                                                                 | plain    |             |              | 
+ status          | character varying(20) |           | not null | 'reserved'::character varying                                                     | extended |             |              | 
+Indexes:
+    "booking_room_pkey" PRIMARY KEY, btree (booking_room_id)
+    "excl_no_overlapping_booking" EXCLUDE USING gist (room_id WITH =, stay WITH &&) WHERE (status::text = ANY (ARRAY['reserved'::character varying, 'checked_in'::character varying]::text[]))
+    "idx_booking_room_dates" btree (check_in_date, check_out_date)
+    "idx_booking_room_fk_booking" btree (booking_id)
+    "idx_booking_room_fk_room" btree (room_id)
+Check constraints:
+    "booking_room_num_guests_check" CHECK (num_guests > 0)
+    "booking_room_rate_per_night_check" CHECK (rate_per_night >= 0::numeric)
+    "booking_room_status_check" CHECK (status::text = ANY (ARRAY['reserved'::character varying, 'checked_in'::character varying, 'checked_out'::character varying, 'cancelled'::character varying]::text[]))
+    "chk_checkout_after_checkin" CHECK (check_out_date > check_in_date)
+Foreign-key constraints:
+    "booking_room_booking_id_fkey" FOREIGN KEY (booking_id) REFERENCES booking(booking_id) ON DELETE CASCADE
+    "booking_room_room_id_fkey" FOREIGN KEY (room_id) REFERENCES room(room_id) ON DELETE RESTRICT
+Referenced by:
+    TABLE "check_in_out" CONSTRAINT "check_in_out_booking_room_id_fkey" FOREIGN KEY (booking_room_id) REFERENCES booking_room(booking_room_id) ON DELETE CASCADE
+Access method: heap
+

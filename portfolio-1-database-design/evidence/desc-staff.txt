@@ -1,0 +1,26 @@
+                                                                     Table "public.staff"
+   Column   |           Type           | Collation | Nullable |                 Default                 | Storage  | Compression | Stats target | Description 
+------------+--------------------------+-----------+----------+-----------------------------------------+----------+-------------+--------------+-------------
+ staff_id   | integer                  |           | not null | nextval('staff_staff_id_seq'::regclass) | plain    |             |              | 
+ hotel_id   | integer                  |           | not null |                                         | plain    |             |              | 
+ first_name | character varying(50)    |           | not null |                                         | extended |             |              | 
+ last_name  | character varying(50)    |           | not null |                                         | extended |             |              | 
+ email      | character varying(100)   |           | not null |                                         | extended |             |              | 
+ role       | character varying(20)    |           | not null |                                         | extended |             |              | 
+ is_active  | boolean                  |           | not null | true                                    | plain    |             |              | 
+ hired_date | date                     |           | not null |                                         | plain    |             |              | 
+ created_at | timestamp with time zone |           | not null | now()                                   | plain    |             |              | 
+Indexes:
+    "staff_pkey" PRIMARY KEY, btree (staff_id)
+    "idx_staff_hotel" btree (hotel_id)
+    "staff_email_key" UNIQUE CONSTRAINT, btree (email)
+Check constraints:
+    "staff_role_check" CHECK (role::text = ANY (ARRAY['receptionist'::character varying, 'manager'::character varying, 'housekeeping'::character varying, 'maintenance'::character varying]::text[]))
+Foreign-key constraints:
+    "staff_hotel_id_fkey" FOREIGN KEY (hotel_id) REFERENCES hotel(hotel_id) ON DELETE RESTRICT
+Referenced by:
+    TABLE "check_in_out" CONSTRAINT "check_in_out_checked_in_by_fkey" FOREIGN KEY (checked_in_by) REFERENCES staff(staff_id) ON DELETE SET NULL
+    TABLE "check_in_out" CONSTRAINT "check_in_out_checked_out_by_fkey" FOREIGN KEY (checked_out_by) REFERENCES staff(staff_id) ON DELETE SET NULL
+    TABLE "room_status_history" CONSTRAINT "room_status_history_changed_by_fkey" FOREIGN KEY (changed_by) REFERENCES staff(staff_id) ON DELETE SET NULL
+Access method: heap
+

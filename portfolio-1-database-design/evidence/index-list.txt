@@ -1,0 +1,39 @@
+                                                               List of relations
+ Schema |               Name               | Type  |    Owner    |        Table        | Persistence | Access method |    Size    | Description 
+--------+----------------------------------+-------+-------------+---------------------+-------------+---------------+------------+-------------
+ public | audit_log_pkey                   | index | hotel_admin | audit_log           | permanent   | btree         | 8192 bytes | 
+ public | booking_booking_ref_key          | index | hotel_admin | booking             | permanent   | btree         | 8192 bytes | 
+ public | booking_pkey                     | index | hotel_admin | booking             | permanent   | btree         | 8192 bytes | 
+ public | booking_room_pkey                | index | hotel_admin | booking_room        | permanent   | btree         | 8192 bytes | 
+ public | check_in_out_booking_room_id_key | index | hotel_admin | check_in_out        | permanent   | btree         | 8192 bytes | 
+ public | check_in_out_pkey                | index | hotel_admin | check_in_out        | permanent   | btree         | 8192 bytes | 
+ public | excl_no_overlapping_booking      | index | hotel_admin | booking_room        | permanent   | gist          | 8192 bytes | 
+ public | guest_email_key                  | index | hotel_admin | guest               | permanent   | btree         | 8192 bytes | 
+ public | guest_pkey                       | index | hotel_admin | guest               | permanent   | btree         | 8192 bytes | 
+ public | hotel_pkey                       | index | hotel_admin | hotel               | permanent   | btree         | 8192 bytes | 
+ public | idx_audit_log_table_record       | index | hotel_admin | audit_log           | permanent   | btree         | 8192 bytes | 
+ public | idx_audit_log_time               | index | hotel_admin | audit_log           | permanent   | btree         | 8192 bytes | 
+ public | idx_booking_guest                | index | hotel_admin | booking             | permanent   | btree         | 8192 bytes | 
+ public | idx_booking_hotel                | index | hotel_admin | booking             | permanent   | btree         | 8192 bytes | 
+ public | idx_booking_room_dates           | index | hotel_admin | booking_room        | permanent   | btree         | 8192 bytes | 
+ public | idx_booking_room_fk_booking      | index | hotel_admin | booking_room        | permanent   | btree         | 8192 bytes | 
+ public | idx_booking_room_fk_room         | index | hotel_admin | booking_room        | permanent   | btree         | 8192 bytes | 
+ public | idx_booking_status               | index | hotel_admin | booking             | permanent   | btree         | 8192 bytes | 
+ public | idx_check_in_out_booking_room    | index | hotel_admin | check_in_out        | permanent   | btree         | 8192 bytes | 
+ public | idx_payment_booking              | index | hotel_admin | payment             | permanent   | btree         | 8192 bytes | 
+ public | idx_room_hotel                   | index | hotel_admin | room                | permanent   | btree         | 8192 bytes | 
+ public | idx_room_room_type               | index | hotel_admin | room                | permanent   | btree         | 8192 bytes | 
+ public | idx_room_status_room             | index | hotel_admin | room_status_history | permanent   | btree         | 8192 bytes | 
+ public | idx_seasonal_rate_hotel_type     | index | hotel_admin | seasonal_rate       | permanent   | btree         | 8192 bytes | 
+ public | idx_staff_hotel                  | index | hotel_admin | staff               | permanent   | btree         | 8192 bytes | 
+ public | payment_pkey                     | index | hotel_admin | payment             | permanent   | btree         | 8192 bytes | 
+ public | room_pkey                        | index | hotel_admin | room                | permanent   | btree         | 8192 bytes | 
+ public | room_status_history_pkey         | index | hotel_admin | room_status_history | permanent   | btree         | 8192 bytes | 
+ public | room_type_name_key               | index | hotel_admin | room_type           | permanent   | btree         | 8192 bytes | 
+ public | room_type_pkey                   | index | hotel_admin | room_type           | permanent   | btree         | 8192 bytes | 
+ public | seasonal_rate_pkey               | index | hotel_admin | seasonal_rate       | permanent   | btree         | 8192 bytes | 
+ public | staff_email_key                  | index | hotel_admin | staff               | permanent   | btree         | 8192 bytes | 
+ public | staff_pkey                       | index | hotel_admin | staff               | permanent   | btree         | 8192 bytes | 
+ public | uq_room_number_per_hotel         | index | hotel_admin | room                | permanent   | btree         | 8192 bytes | 
+(34 rows)
+

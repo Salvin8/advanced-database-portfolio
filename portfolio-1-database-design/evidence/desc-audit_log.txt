@@ -1,0 +1,19 @@
+                                                                    Table "public.audit_log"
+   Column   |           Type           | Collation | Nullable |                  Default                  | Storage  | Compression | Stats target | Description 
+------------+--------------------------+-----------+----------+-------------------------------------------+----------+-------------+--------------+-------------
+ log_id     | bigint                   |           | not null | nextval('audit_log_log_id_seq'::regclass) | plain    |             |              | 
+ table_name | character varying(50)    |           | not null |                                           | extended |             |              | 
+ record_id  | integer                  |           | not null |                                           | plain    |             |              | 
+ action     | character varying(10)    |           | not null |                                           | extended |             |              | 
+ old_values | jsonb                    |           |          |                                           | extended |             |              | 
+ new_values | jsonb                    |           |          |                                           | extended |             |              | 
+ changed_by | character varying(100)   |           |          |                                           | extended |             |              | 
+ changed_at | timestamp with time zone |           | not null | now()                                     | plain    |             |              | 
+Indexes:
+    "audit_log_pkey" PRIMARY KEY, btree (log_id)
+    "idx_audit_log_table_record" btree (table_name, record_id)
+    "idx_audit_log_time" btree (changed_at)
+Check constraints:
+    "audit_log_action_check" CHECK (action::text = ANY (ARRAY['INSERT'::character varying, 'UPDATE'::character varying, 'DELETE'::character varying]::text[]))
+Access method: heap
+

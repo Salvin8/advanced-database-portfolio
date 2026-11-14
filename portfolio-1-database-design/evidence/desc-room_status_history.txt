@@ -1,0 +1,19 @@
+                                                                     Table "public.room_status_history"
+   Column   |           Type           | Collation | Nullable |                        Default                         | Storage  | Compression | Stats target | Description 
+------------+--------------------------+-----------+----------+--------------------------------------------------------+----------+-------------+--------------+-------------
+ status_id  | integer                  |           | not null | nextval('room_status_history_status_id_seq'::regclass) | plain    |             |              | 
+ room_id    | integer                  |           | not null |                                                        | plain    |             |              | 
+ status     | character varying(20)    |           | not null |                                                        | extended |             |              | 
+ changed_by | integer                  |           |          |                                                        | plain    |             |              | 
+ changed_at | timestamp with time zone |           | not null | now()                                                  | plain    |             |              | 
+ notes      | text                     |           |          |                                                        | extended |             |              | 
+Indexes:
+    "room_status_history_pkey" PRIMARY KEY, btree (status_id)
+    "idx_room_status_room" btree (room_id, changed_at DESC)
+Check constraints:
+    "room_status_history_status_check" CHECK (status::text = ANY (ARRAY['clean'::character varying, 'dirty'::character varying, 'inspected'::character varying, 'out_of_order'::character varying, 'maintenance'::character varying]::text[]))
+Foreign-key constraints:
+    "room_status_history_changed_by_fkey" FOREIGN KEY (changed_by) REFERENCES staff(staff_id) ON DELETE SET NULL
+    "room_status_history_room_id_fkey" FOREIGN KEY (room_id) REFERENCES room(room_id) ON DELETE CASCADE
+Access method: heap
+

@@ -1,0 +1,25 @@
+                                                                      Table "public.guest"
+    Column     |           Type           | Collation | Nullable |                 Default                 | Storage  | Compression | Stats target | Description 
+---------------+--------------------------+-----------+----------+-----------------------------------------+----------+-------------+--------------+-------------
+ guest_id      | integer                  |           | not null | nextval('guest_guest_id_seq'::regclass) | plain    |             |              | 
+ first_name    | character varying(50)    |           | not null |                                         | extended |             |              | 
+ last_name     | character varying(50)    |           | not null |                                         | extended |             |              | 
+ email         | character varying(100)   |           | not null |                                         | extended |             |              | 
+ phone         | character varying(20)    |           |          |                                         | extended |             |              | 
+ id_type       | character varying(20)    |           |          |                                         | extended |             |              | 
+ id_number     | character varying(50)    |           |          |                                         | extended |             |              | 
+ nationality   | character varying(50)    |           |          |                                         | extended |             |              | 
+ date_of_birth | date                     |           |          |                                         | plain    |             |              | 
+ created_at    | timestamp with time zone |           | not null | now()                                   | plain    |             |              | 
+ updated_at    | timestamp with time zone |           | not null | now()                                   | plain    |             |              | 
+Indexes:
+    "guest_pkey" PRIMARY KEY, btree (guest_id)
+    "guest_email_key" UNIQUE CONSTRAINT, btree (email)
+Check constraints:
+    "guest_id_type_check" CHECK (id_type::text = ANY (ARRAY['passport'::character varying, 'national_id'::character varying, 'drivers_license'::character varying]::text[]))
+Referenced by:
+    TABLE "booking" CONSTRAINT "booking_guest_id_fkey" FOREIGN KEY (guest_id) REFERENCES guest(guest_id) ON DELETE RESTRICT
+Triggers:
+    trg_guest_updated_at BEFORE UPDATE ON guest FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at()
+Access method: heap
+

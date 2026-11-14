@@ -1,0 +1,25 @@
+                                                                     Table "public.hotel"
+   Column    |           Type           | Collation | Nullable |                 Default                 | Storage  | Compression | Stats target | Description 
+-------------+--------------------------+-----------+----------+-----------------------------------------+----------+-------------+--------------+-------------
+ hotel_id    | integer                  |           | not null | nextval('hotel_hotel_id_seq'::regclass) | plain    |             |              | 
+ name        | character varying(100)   |           | not null |                                         | extended |             |              | 
+ city        | character varying(50)    |           | not null |                                         | extended |             |              | 
+ address     | text                     |           | not null |                                         | extended |             |              | 
+ phone       | character varying(20)    |           |          |                                         | extended |             |              | 
+ email       | character varying(100)   |           |          |                                         | extended |             |              | 
+ star_rating | smallint                 |           | not null |                                         | plain    |             |              | 
+ created_at  | timestamp with time zone |           | not null | now()                                   | plain    |             |              | 
+ updated_at  | timestamp with time zone |           | not null | now()                                   | plain    |             |              | 
+Indexes:
+    "hotel_pkey" PRIMARY KEY, btree (hotel_id)
+Check constraints:
+    "hotel_star_rating_check" CHECK (star_rating >= 1 AND star_rating <= 5)
+Referenced by:
+    TABLE "booking" CONSTRAINT "booking_hotel_id_fkey" FOREIGN KEY (hotel_id) REFERENCES hotel(hotel_id) ON DELETE RESTRICT
+    TABLE "room" CONSTRAINT "room_hotel_id_fkey" FOREIGN KEY (hotel_id) REFERENCES hotel(hotel_id) ON DELETE RESTRICT
+    TABLE "seasonal_rate" CONSTRAINT "seasonal_rate_hotel_id_fkey" FOREIGN KEY (hotel_id) REFERENCES hotel(hotel_id) ON DELETE CASCADE
+    TABLE "staff" CONSTRAINT "staff_hotel_id_fkey" FOREIGN KEY (hotel_id) REFERENCES hotel(hotel_id) ON DELETE RESTRICT
+Triggers:
+    trg_hotel_updated_at BEFORE UPDATE ON hotel FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at()
+Access method: heap
+

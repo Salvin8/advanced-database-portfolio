@@ -1,0 +1,24 @@
+                                                                    Table "public.room"
+    Column    |         Type          | Collation | Nullable |                Default                | Storage  | Compression | Stats target | Description 
+--------------+-----------------------+-----------+----------+---------------------------------------+----------+-------------+--------------+-------------
+ room_id      | integer               |           | not null | nextval('room_room_id_seq'::regclass) | plain    |             |              | 
+ hotel_id     | integer               |           | not null |                                       | plain    |             |              | 
+ room_type_id | integer               |           | not null |                                       | plain    |             |              | 
+ room_number  | character varying(10) |           | not null |                                       | extended |             |              | 
+ floor        | smallint              |           | not null |                                       | plain    |             |              | 
+ is_active    | boolean               |           | not null | true                                  | plain    |             |              | 
+Indexes:
+    "room_pkey" PRIMARY KEY, btree (room_id)
+    "idx_room_hotel" btree (hotel_id)
+    "idx_room_room_type" btree (room_type_id)
+    "uq_room_number_per_hotel" UNIQUE CONSTRAINT, btree (hotel_id, room_number)
+Check constraints:
+    "room_floor_check" CHECK (floor >= 0)
+Foreign-key constraints:
+    "room_hotel_id_fkey" FOREIGN KEY (hotel_id) REFERENCES hotel(hotel_id) ON DELETE RESTRICT
+    "room_room_type_id_fkey" FOREIGN KEY (room_type_id) REFERENCES room_type(room_type_id) ON DELETE RESTRICT
+Referenced by:
+    TABLE "booking_room" CONSTRAINT "booking_room_room_id_fkey" FOREIGN KEY (room_id) REFERENCES room(room_id) ON DELETE RESTRICT
+    TABLE "room_status_history" CONSTRAINT "room_status_history_room_id_fkey" FOREIGN KEY (room_id) REFERENCES room(room_id) ON DELETE CASCADE
+Access method: heap
+

@@ -1,0 +1,59 @@
+     table_name      |               conname               | contype |                                                                                                                   definition                                                                                                                    
+---------------------+-------------------------------------+---------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ audit_log           | audit_log_action_check              | c       | CHECK (((action)::text = ANY ((ARRAY['INSERT'::character varying, 'UPDATE'::character varying, 'DELETE'::character varying])::text[])))
+ audit_log           | audit_log_pkey                      | p       | PRIMARY KEY (log_id)
+ booking             | booking_status_check                | c       | CHECK (((status)::text = ANY ((ARRAY['pending'::character varying, 'confirmed'::character varying, 'checked_in'::character varying, 'checked_out'::character varying, 'cancelled'::character varying, 'no_show'::character varying])::text[])))
+ booking             | booking_total_amount_check          | c       | CHECK ((total_amount >= (0)::numeric))
+ booking             | booking_guest_id_fkey               | f       | FOREIGN KEY (guest_id) REFERENCES guest(guest_id) ON DELETE RESTRICT
+ booking             | booking_hotel_id_fkey               | f       | FOREIGN KEY (hotel_id) REFERENCES hotel(hotel_id) ON DELETE RESTRICT
+ booking             | booking_pkey                        | p       | PRIMARY KEY (booking_id)
+ booking             | booking_booking_ref_key             | u       | UNIQUE (booking_ref)
+ booking_room        | booking_room_num_guests_check       | c       | CHECK ((num_guests > 0))
+ booking_room        | booking_room_rate_per_night_check   | c       | CHECK ((rate_per_night >= (0)::numeric))
+ booking_room        | booking_room_status_check           | c       | CHECK (((status)::text = ANY ((ARRAY['reserved'::character varying, 'checked_in'::character varying, 'checked_out'::character varying, 'cancelled'::character varying])::text[])))
+ booking_room        | chk_checkout_after_checkin          | c       | CHECK ((check_out_date > check_in_date))
+ booking_room        | booking_room_booking_id_fkey        | f       | FOREIGN KEY (booking_id) REFERENCES booking(booking_id) ON DELETE CASCADE
+ booking_room        | booking_room_room_id_fkey           | f       | FOREIGN KEY (room_id) REFERENCES room(room_id) ON DELETE RESTRICT
+ booking_room        | booking_room_pkey                   | p       | PRIMARY KEY (booking_room_id)
+ booking_room        | excl_no_overlapping_booking         | x       | EXCLUDE USING gist (room_id WITH =, stay WITH &&) WHERE (((status)::text = ANY ((ARRAY['reserved'::character varying, 'checked_in'::character varying])::text[])))
+ check_in_out        | chk_checkout_after_checkin_time     | c       | CHECK (((check_out_time IS NULL) OR (check_out_time > check_in_time)))
+ check_in_out        | check_in_out_booking_room_id_fkey   | f       | FOREIGN KEY (booking_room_id) REFERENCES booking_room(booking_room_id) ON DELETE CASCADE
+ check_in_out        | check_in_out_checked_in_by_fkey     | f       | FOREIGN KEY (checked_in_by) REFERENCES staff(staff_id) ON DELETE SET NULL
+ check_in_out        | check_in_out_checked_out_by_fkey    | f       | FOREIGN KEY (checked_out_by) REFERENCES staff(staff_id) ON DELETE SET NULL
+ check_in_out        | check_in_out_pkey                   | p       | PRIMARY KEY (record_id)
+ check_in_out        | check_in_out_booking_room_id_key    | u       | UNIQUE (booking_room_id)
+ guest               | guest_id_type_check                 | c       | CHECK (((id_type)::text = ANY ((ARRAY['passport'::character varying, 'national_id'::character varying, 'drivers_license'::character varying])::text[])))
+ guest               | guest_pkey                          | p       | PRIMARY KEY (guest_id)
+ guest               | guest_email_key                     | u       | UNIQUE (email)
+ hotel               | hotel_star_rating_check             | c       | CHECK (((star_rating >= 1) AND (star_rating <= 5)))
+ hotel               | hotel_pkey                          | p       | PRIMARY KEY (hotel_id)
+ payment             | payment_amount_check                | c       | CHECK ((amount >= (0)::numeric))
+ payment             | payment_payment_method_check        | c       | CHECK (((payment_method)::text = ANY ((ARRAY['card'::character varying, 'cash'::character varying, 'bank_transfer'::character varying, 'mobile_money'::character varying])::text[])))
+ payment             | payment_payment_status_check        | c       | CHECK (((payment_status)::text = ANY ((ARRAY['pending'::character varying, 'completed'::character varying, 'failed'::character varying, 'refunded'::character varying])::text[])))
+ payment             | payment_booking_id_fkey             | f       | FOREIGN KEY (booking_id) REFERENCES booking(booking_id) ON DELETE RESTRICT
+ payment             | payment_pkey                        | p       | PRIMARY KEY (payment_id)
+ room                | room_floor_check                    | c       | CHECK ((floor >= 0))
+ room                | room_hotel_id_fkey                  | f       | FOREIGN KEY (hotel_id) REFERENCES hotel(hotel_id) ON DELETE RESTRICT
+ room                | room_room_type_id_fkey              | f       | FOREIGN KEY (room_type_id) REFERENCES room_type(room_type_id) ON DELETE RESTRICT
+ room                | room_pkey                           | p       | PRIMARY KEY (room_id)
+ room                | uq_room_number_per_hotel            | u       | UNIQUE (hotel_id, room_number)
+ room_status_history | room_status_history_status_check    | c       | CHECK (((status)::text = ANY ((ARRAY['clean'::character varying, 'dirty'::character varying, 'inspected'::character varying, 'out_of_order'::character varying, 'maintenance'::character varying])::text[])))
+ room_status_history | room_status_history_changed_by_fkey | f       | FOREIGN KEY (changed_by) REFERENCES staff(staff_id) ON DELETE SET NULL
+ room_status_history | room_status_history_room_id_fkey    | f       | FOREIGN KEY (room_id) REFERENCES room(room_id) ON DELETE CASCADE
+ room_status_history | room_status_history_pkey            | p       | PRIMARY KEY (status_id)
+ room_type           | chk_capacity_range                  | c       | CHECK ((max_capacity >= base_capacity))
+ room_type           | room_type_base_capacity_check       | c       | CHECK ((base_capacity > 0))
+ room_type           | room_type_max_capacity_check        | c       | CHECK ((max_capacity > 0))
+ room_type           | room_type_pkey                      | p       | PRIMARY KEY (room_type_id)
+ room_type           | room_type_name_key                  | u       | UNIQUE (name)
+ seasonal_rate       | chk_season_dates                    | c       | CHECK ((end_date > start_date))
+ seasonal_rate       | seasonal_rate_price_per_night_check | c       | CHECK ((price_per_night > (0)::numeric))
+ seasonal_rate       | seasonal_rate_hotel_id_fkey         | f       | FOREIGN KEY (hotel_id) REFERENCES hotel(hotel_id) ON DELETE CASCADE
+ seasonal_rate       | seasonal_rate_room_type_id_fkey     | f       | FOREIGN KEY (room_type_id) REFERENCES room_type(room_type_id) ON DELETE CASCADE
+ seasonal_rate       | seasonal_rate_pkey                  | p       | PRIMARY KEY (rate_id)
+ staff               | staff_role_check                    | c       | CHECK (((role)::text = ANY ((ARRAY['receptionist'::character varying, 'manager'::character varying, 'housekeeping'::character varying, 'maintenance'::character varying])::text[])))
+ staff               | staff_hotel_id_fkey                 | f       | FOREIGN KEY (hotel_id) REFERENCES hotel(hotel_id) ON DELETE RESTRICT
+ staff               | staff_pkey                          | p       | PRIMARY KEY (staff_id)
+ staff               | staff_email_key                     | u       | UNIQUE (email)
+(55 rows)
+

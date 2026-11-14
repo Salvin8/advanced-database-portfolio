@@ -1,0 +1,22 @@
+                                                                        Table "public.payment"
+     Column      |           Type           | Collation | Nullable |                   Default                   | Storage  | Compression | Stats target | Description 
+-----------------+--------------------------+-----------+----------+---------------------------------------------+----------+-------------+--------------+-------------
+ payment_id      | integer                  |           | not null | nextval('payment_payment_id_seq'::regclass) | plain    |             |              | 
+ booking_id      | integer                  |           | not null |                                             | plain    |             |              | 
+ amount          | numeric(12,2)            |           | not null |                                             | main     |             |              | 
+ payment_method  | character varying(20)    |           | not null |                                             | extended |             |              | 
+ payment_status  | character varying(20)    |           | not null | 'pending'::character varying                | extended |             |              | 
+ transaction_ref | character varying(50)    |           |          |                                             | extended |             |              | 
+ payment_date    | timestamp with time zone |           | not null | now()                                       | plain    |             |              | 
+ created_at      | timestamp with time zone |           | not null | now()                                       | plain    |             |              | 
+Indexes:
+    "payment_pkey" PRIMARY KEY, btree (payment_id)
+    "idx_payment_booking" btree (booking_id)
+Check constraints:
+    "payment_amount_check" CHECK (amount >= 0::numeric)
+    "payment_payment_method_check" CHECK (payment_method::text = ANY (ARRAY['card'::character varying, 'cash'::character varying, 'bank_transfer'::character varying, 'mobile_money'::character varying]::text[]))
+    "payment_payment_status_check" CHECK (payment_status::text = ANY (ARRAY['pending'::character varying, 'completed'::character varying, 'failed'::character varying, 'refunded'::character varying]::text[]))
+Foreign-key constraints:
+    "payment_booking_id_fkey" FOREIGN KEY (booking_id) REFERENCES booking(booking_id) ON DELETE RESTRICT
+Access method: heap
+

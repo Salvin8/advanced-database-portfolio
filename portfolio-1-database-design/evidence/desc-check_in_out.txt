@@ -1,0 +1,21 @@
+                                                                       Table "public.check_in_out"
+     Column      |           Type           | Collation | Nullable |                     Default                     | Storage | Compression | Stats target | Description 
+-----------------+--------------------------+-----------+----------+-------------------------------------------------+---------+-------------+--------------+-------------
+ record_id       | integer                  |           | not null | nextval('check_in_out_record_id_seq'::regclass) | plain   |             |              | 
+ booking_room_id | integer                  |           | not null |                                                 | plain   |             |              | 
+ checked_in_by   | integer                  |           |          |                                                 | plain   |             |              | 
+ checked_out_by  | integer                  |           |          |                                                 | plain   |             |              | 
+ check_in_time   | timestamp with time zone |           | not null | now()                                           | plain   |             |              | 
+ check_out_time  | timestamp with time zone |           |          |                                                 | plain   |             |              | 
+Indexes:
+    "check_in_out_pkey" PRIMARY KEY, btree (record_id)
+    "check_in_out_booking_room_id_key" UNIQUE CONSTRAINT, btree (booking_room_id)
+    "idx_check_in_out_booking_room" btree (booking_room_id)
+Check constraints:
+    "chk_checkout_after_checkin_time" CHECK (check_out_time IS NULL OR check_out_time > check_in_time)
+Foreign-key constraints:
+    "check_in_out_booking_room_id_fkey" FOREIGN KEY (booking_room_id) REFERENCES booking_room(booking_room_id) ON DELETE CASCADE
+    "check_in_out_checked_in_by_fkey" FOREIGN KEY (checked_in_by) REFERENCES staff(staff_id) ON DELETE SET NULL
+    "check_in_out_checked_out_by_fkey" FOREIGN KEY (checked_out_by) REFERENCES staff(staff_id) ON DELETE SET NULL
+Access method: heap
+

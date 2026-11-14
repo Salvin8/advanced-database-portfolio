@@ -1,0 +1,33 @@
+                                                                       Table "public.booking"
+    Column    |           Type           | Collation | Nullable |                   Default                   | Storage  | Compression | Stats target | Description 
+--------------+--------------------------+-----------+----------+---------------------------------------------+----------+-------------+--------------+-------------
+ booking_id   | integer                  |           | not null | nextval('booking_booking_id_seq'::regclass) | plain    |             |              | 
+ guest_id     | integer                  |           | not null |                                             | plain    |             |              | 
+ hotel_id     | integer                  |           | not null |                                             | plain    |             |              | 
+ booking_ref  | character varying(20)    |           | not null |                                             | extended |             |              | 
+ status       | character varying(20)    |           | not null | 'pending'::character varying                | extended |             |              | 
+ booking_date | timestamp with time zone |           | not null | now()                                       | plain    |             |              | 
+ total_amount | numeric(12,2)            |           | not null | 0                                           | main     |             |              | 
+ notes        | text                     |           |          |                                             | extended |             |              | 
+ created_at   | timestamp with time zone |           | not null | now()                                       | plain    |             |              | 
+ updated_at   | timestamp with time zone |           | not null | now()                                       | plain    |             |              | 
+Indexes:
+    "booking_pkey" PRIMARY KEY, btree (booking_id)
+    "booking_booking_ref_key" UNIQUE CONSTRAINT, btree (booking_ref)
+    "idx_booking_guest" btree (guest_id)
+    "idx_booking_hotel" btree (hotel_id)
+    "idx_booking_status" btree (status)
+Check constraints:
+    "booking_status_check" CHECK (status::text = ANY (ARRAY['pending'::character varying, 'confirmed'::character varying, 'checked_in'::character varying, 'checked_out'::character varying, 'cancelled'::character varying, 'no_show'::character varying]::text[]))
+    "booking_total_amount_check" CHECK (total_amount >= 0::numeric)
+Foreign-key constraints:
+    "booking_guest_id_fkey" FOREIGN KEY (guest_id) REFERENCES guest(guest_id) ON DELETE RESTRICT
+    "booking_hotel_id_fkey" FOREIGN KEY (hotel_id) REFERENCES hotel(hotel_id) ON DELETE RESTRICT
+Referenced by:
+    TABLE "booking_room" CONSTRAINT "booking_room_booking_id_fkey" FOREIGN KEY (booking_id) REFERENCES booking(booking_id) ON DELETE CASCADE
+    TABLE "payment" CONSTRAINT "payment_booking_id_fkey" FOREIGN KEY (booking_id) REFERENCES booking(booking_id) ON DELETE RESTRICT
+Triggers:
+    trg_audit_booking_status AFTER UPDATE ON booking FOR EACH ROW EXECUTE FUNCTION fn_audit_booking_status()
+    trg_booking_updated_at BEFORE UPDATE ON booking FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at()
+Access method: heap
+

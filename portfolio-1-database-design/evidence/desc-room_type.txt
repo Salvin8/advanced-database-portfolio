@@ -1,0 +1,20 @@
+                                                                       Table "public.room_type"
+    Column     |         Type          | Collation | Nullable |                     Default                     | Storage  | Compression | Stats target | Description 
+---------------+-----------------------+-----------+----------+-------------------------------------------------+----------+-------------+--------------+-------------
+ room_type_id  | integer               |           | not null | nextval('room_type_room_type_id_seq'::regclass) | plain    |             |              | 
+ name          | character varying(50) |           | not null |                                                 | extended |             |              | 
+ description   | text                  |           |          |                                                 | extended |             |              | 
+ base_capacity | smallint              |           | not null |                                                 | plain    |             |              | 
+ max_capacity  | smallint              |           | not null |                                                 | plain    |             |              | 
+Indexes:
+    "room_type_pkey" PRIMARY KEY, btree (room_type_id)
+    "room_type_name_key" UNIQUE CONSTRAINT, btree (name)
+Check constraints:
+    "chk_capacity_range" CHECK (max_capacity >= base_capacity)
+    "room_type_base_capacity_check" CHECK (base_capacity > 0)
+    "room_type_max_capacity_check" CHECK (max_capacity > 0)
+Referenced by:
+    TABLE "room" CONSTRAINT "room_room_type_id_fkey" FOREIGN KEY (room_type_id) REFERENCES room_type(room_type_id) ON DELETE RESTRICT
+    TABLE "seasonal_rate" CONSTRAINT "seasonal_rate_room_type_id_fkey" FOREIGN KEY (room_type_id) REFERENCES room_type(room_type_id) ON DELETE CASCADE
+Access method: heap
+
