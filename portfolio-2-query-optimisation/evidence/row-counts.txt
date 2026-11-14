@@ -1,0 +1,20 @@
+=====================================================================
+SAVANNAH CREST HOTELS - LIVE DATABASE ROW COUNTS (SCALE = 1.0)
+Timestamp: 2026-11-14T10:51:56.320518
+=====================================================================
+
+Table Name                |    Row Count
+------------------------------------------
+room_status_history       |      879,700
+payment                   |      520,202
+booking_room              |      500,000
+booking                   |      500,000
+check_in_out              |      439,550
+guest                     |       50,000
+seasonal_rate             |          840
+room                      |          600
+staff                     |           60
+hotel                     |            6
+room_type                 |            4
+audit_log                 |            0
+------------------------------------------

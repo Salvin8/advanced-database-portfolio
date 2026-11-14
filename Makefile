@@ -33,19 +33,30 @@ logs:
 
 # --- Portfolio targets ---
 
-.PHONY: p1 p2 p2-seed p3 p4 p5
+.PHONY: p1 p1-test p2 p2-seed p3 p4 p5
 
 p1:
-	@echo "Portfolio 1: Database Design and Modelling"
-	@echo "TODO: implement"
+	@echo "Portfolio 1: Applying schema to clean database..."
+	docker compose exec -T postgres psql -U $(POSTGRES_USER) -d $(POSTGRES_DB) -v ON_ERROR_STOP=1 \
+		< portfolio-1-database-design/sql/01_schema.sql
+	docker compose exec -T postgres psql -U $(POSTGRES_USER) -d $(POSTGRES_DB) -v ON_ERROR_STOP=1 \
+		< portfolio-1-database-design/sql/02_views_and_triggers.sql
+	@echo "Portfolio 1: Schema applied. Run 'make p1-test' or 'make psql' to inspect."
+
+p1-test:
+	@echo "Portfolio 1: Running constraint test suite..."
+	docker compose exec -T postgres psql -U $(POSTGRES_USER) -d $(POSTGRES_DB) \
+		< portfolio-1-database-design/sql/03_constraint_tests.sql \
+		> portfolio-1-database-design/evidence/constraint-tests.txt 2>&1
+	@echo "Portfolio 1: Constraint tests complete. Evidence written to portfolio-1-database-design/evidence/constraint-tests.txt"
 
 p2:
 	@echo "Portfolio 2: Query Processing and Optimisation"
 	@echo "TODO: implement"
 
 p2-seed:
-	@echo "Portfolio 2: Seed data"
-	@echo "TODO: implement"
+	@echo "Portfolio 2: Seeding database with deterministic dataset..."
+	.venv/bin/python3 portfolio-2-query-optimisation/scripts/seed.py
 
 p3:
 	@echo "Portfolio 3: Transactions and Concurrency"

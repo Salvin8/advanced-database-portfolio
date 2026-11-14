@@ -1,0 +1,174 @@
+=====================================================================
+PORTFOLIO 1: CONSTRAINT VERIFICATION TEST SUITE
+=====================================================================
+
+Timing is on.
+DELETE 0
+Time: 8.942 ms
+DELETE 0
+Time: 10.660 ms
+DELETE 0
+Time: 1.777 ms
+DELETE 0
+Time: 0.998 ms
+DELETE 0
+Time: 3.280 ms
+DELETE 0
+Time: 6.886 ms
+DELETE 0
+Time: 2.719 ms
+DELETE 0
+Time: 2.446 ms
+DELETE 0
+Time: 1.967 ms
+DELETE 0
+Time: 1.788 ms
+---------------------------------------------------------------------
+PART 1: VALID INSERTS (SHOULD SUCCEED)
+---------------------------------------------------------------------
+ hotel_id |       name       | city  | star_rating 
+----------+------------------+-------+-------------
+     9999 | TEST-HOTEL-ABUJA | Abuja |           4
+(1 row)
+
+INSERT 0 1
+Time: 5.600 ms
+ room_type_id |      name      | base_capacity | max_capacity 
+--------------+----------------+---------------+--------------
+         9999 | TEST-PENTHOUSE |             2 |            4
+(1 row)
+
+INSERT 0 1
+Time: 2.927 ms
+ room_id | hotel_id | room_number | floor 
+---------+----------+-------------+-------
+    9998 |     9999 | TEST-101    |     1
+    9999 |     9999 | TEST-102    |     1
+(2 rows)
+
+INSERT 0 2
+Time: 5.310 ms
+ guest_id | first_name | last_name |          email          
+----------+------------+-----------+-------------------------
+     9998 | Amaka      | Okonkwo   | test.guest1@example.com
+     9999 | Tunde      | Adeyemi   | test.guest2@example.com
+(2 rows)
+
+INSERT 0 2
+Time: 2.680 ms
+ staff_id | first_name | last_name |     role     
+----------+------------+-----------+--------------
+     9999 | Chidi      | Eze       | receptionist
+(1 row)
+
+INSERT 0 1
+Time: 4.386 ms
+ booking_id |   booking_ref    |  status   | total_amount 
+------------+------------------+-----------+--------------
+       9998 | TEST-BK-2026-001 | confirmed |    150000.00
+(1 row)
+
+INSERT 0 1
+Time: 6.292 ms
+ booking_room_id | booking_id | room_id | check_in_date | check_out_date |          stay           |  status  
+-----------------+------------+---------+---------------+----------------+-------------------------+----------
+            9998 |       9998 |    9998 | 2026-12-10    | 2026-12-15     | [2026-12-10,2026-12-15) | reserved
+(1 row)
+
+INSERT 0 1
+Time: 9.289 ms
+INSERT 0 1
+Time: 3.922 ms
+ booking_room_id | booking_id | room_id | check_in_date | check_out_date |          stay           |  status  
+-----------------+------------+---------+---------------+----------------+-------------------------+----------
+            9999 |       9999 |    9998 | 2026-12-15    | 2026-12-20     | [2026-12-15,2026-12-20) | reserved
+(1 row)
+
+INSERT 0 1
+Time: 5.263 ms
+ payment_id | booking_id |  amount   | payment_method | payment_status 
+------------+------------+-----------+----------------+----------------
+       9999 |       9998 | 150000.00 | card           | completed
+(1 row)
+
+INSERT 0 1
+Time: 4.237 ms
+UPDATE 1
+Time: 10.197 ms
+ log_id | table_name | record_id | action | old_status | new_status | changed_by  
+--------+------------+-----------+--------+------------+------------+-------------
+      1 | booking    |      9998 | UPDATE | confirmed  | checked_in | hotel_admin
+      2 | booking    |      9998 | UPDATE | confirmed  | checked_in | hotel_admin
+      3 | booking    |      9998 | UPDATE | confirmed  | checked_in | hotel_admin
+      4 | booking    |      9998 | UPDATE | confirmed  | checked_in | hotel_admin
+(4 rows)
+
+Time: 3.118 ms
+
+---------------------------------------------------------------------
+PART 2: NEGATIVE TESTS (CONSTRAINTS THAT MUST REJECT INVALID DATA)
+---------------------------------------------------------------------
+TEST 2.1: Exclusion constraint test (double booking attempt for room 9998, Dec 12 to 17)...
+NOTICE:  SUCCESS: Caught expected exclusion_violation: conflicting key value violates exclusion constraint "excl_no_overlapping_booking"
+DO
+Time: 7.254 ms
+TEST 2.2: Negative payment check constraint (amount = -5000)...
+NOTICE:  SUCCESS: Caught expected check_violation: new row for relation "payment" violates check constraint "payment_amount_check"
+DO
+Time: 5.883 ms
+TEST 2.3: Date sequence check constraint (checkout 2026-12-05 < checkin 2026-12-10)...
+DO
+Time: 2.114 ms
+TEST 2.4: Foreign key constraint test (non-existent guest_id 999999)...
+NOTICE:  SUCCESS: Caught expected date check/domain violation: range lower bound must be less than or equal to range upper bound
+NOTICE:  SUCCESS: Caught expected foreign_key_violation: insert or update on table "booking" violates foreign key constraint "booking_guest_id_fkey"
+DO
+Time: 4.478 ms
+TEST 2.5: Unique constraint test (duplicate guest email: test.guest1@example.com)...
+NOTICE:  SUCCESS: Caught expected unique_violation: duplicate key value violates unique constraint "guest_email_key"
+DO
+Time: 4.766 ms
+TEST 2.6: Unique constraint test (duplicate room TEST-101 in hotel 9999)...
+NOTICE:  SUCCESS: Caught expected unique_violation: duplicate key value violates unique constraint "uq_room_number_per_hotel"
+DO
+Time: 4.215 ms
+TEST 2.7: Invalid enum status check constraint (status = bogus_status)...
+NOTICE:  SUCCESS: Caught expected check_violation: new row for relation "booking" violates check constraint "booking_status_check"
+DO
+Time: 4.153 ms
+TEST 2.8: Exclusion constraint status filter check (cancelled bookings do NOT block)...
+INSERT 0 1
+Time: 3.588 ms
+INSERT 0 1
+Time: 4.049 ms
+ booking_room_id | room_id | check_in_date | check_out_date |  status  
+-----------------+---------+---------------+----------------+----------
+            9996 |    9999 | 2026-01-10    | 2026-01-15     | reserved
+(1 row)
+
+INSERT 0 1
+Time: 5.831 ms
+
+=====================================================================
+ALL CONSTRAINT TESTS EXECUTED SUCCESSFULLY.
+=====================================================================
+DELETE 1
+Time: 3.100 ms
+DELETE 0
+Time: 3.383 ms
+DELETE 4
+Time: 5.354 ms
+DELETE 3
+Time: 5.107 ms
+DELETE 2
+Time: 4.370 ms
+DELETE 2
+Time: 8.590 ms
+DELETE 1
+Time: 4.354 ms
+DELETE 0
+Time: 1.092 ms
+DELETE 1
+Time: 3.444 ms
+DELETE 1
+Time: 5.356 ms
