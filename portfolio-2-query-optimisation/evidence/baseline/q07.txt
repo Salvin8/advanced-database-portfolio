@@ -1,0 +1,66 @@
+=====================================================================
+BASELINE EXECUTION PLAN: Q07
+Environment: PostgreSQL 16 (P1 Base Schema, Baseline Indexes Only)
+=====================================================================
+
+-- =============================================================================
+-- Q07: Query Rewrite of Q06 (Window Function / CTE Instead of Correlated Subquery)
+-- =============================================================================
+-- Business Question:
+--   Identical business requirement as Q06, but rewritten using a window analytical
+--   aggregation (AVG() OVER (PARTITION BY hotel_id)) inside a CTE to eliminate the
+--   repetitive SubPlan execution of the correlated subquery.
+-- Expected Shape:
+--   Same output as Q06, contrasting execution plan structure and buffer consumption.
+
+--- QUERY SQL ---
+WITH booking_benchmarks AS (
+    SELECT 
+        b.booking_id,
+        b.booking_ref,
+        b.hotel_id,
+        b.booking_date,
+        b.total_amount,
+        b.status,
+        ROUND(AVG(b.total_amount) OVER (PARTITION BY b.hotel_id), 2) AS hotel_avg_amount
+    FROM booking b
+    WHERE b.status != 'cancelled'
+)
+SELECT 
+    booking_id,
+    booking_ref,
+    hotel_id,
+    booking_date,
+    total_amount,
+    hotel_avg_amount
+FROM booking_benchmarks
+WHERE booking_date >= '2026-06-01' 
+  AND booking_date < '2026-12-31'
+  AND total_amount > 1.8 * hotel_avg_amount
+ORDER BY total_amount DESC
+LIMIT 50;
+
+--- EXPLAIN (ANALYZE, BUFFERS) ---
+Limit  (cost=53764.32..53764.44 rows=50 width=70) (actual time=1423.671..1423.680 rows=42 loops=1)
+  Output: booking_benchmarks.booking_id, booking_benchmarks.booking_ref, booking_benchmarks.hotel_id, booking_benchmarks.booking_date, booking_benchmarks.total_amount, booking_benchmarks.hotel_avg_amount
+  Buffers: shared hit=10398, temp read=3587 written=2723
+  ->  Sort  (cost=53764.32..53766.25 rows=773 width=70) (actual time=1423.669..1423.674 rows=42 loops=1)
+        Output: booking_benchmarks.booking_id, booking_benchmarks.booking_ref, booking_benchmarks.hotel_id, booking_benchmarks.booking_date, booking_benchmarks.total_amount, booking_benchmarks.hotel_avg_amount
+        Sort Key: booking_benchmarks.total_amount DESC
+        Sort Method: quicksort  Memory: 27kB
+        Buffers: shared hit=10398, temp read=3587 written=2723
+        ->  Subquery Scan on booking_benchmarks  (cost=0.42..53738.64 rows=773 width=70) (actual time=284.527..1423.556 rows=42 loops=1)
+              Output: booking_benchmarks.booking_id, booking_benchmarks.booking_ref, booking_benchmarks.hotel_id, booking_benchmarks.booking_date, booking_benchmarks.total_amount, booking_benchmarks.hotel_avg_amount
+              Filter: ((booking_benchmarks.booking_date >= '2026-06-01 00:00:00+00'::timestamp with time zone) AND (booking_benchmarks.booking_date < '2026-12-31 00:00:00+00'::timestamp with time zone) AND (booking_benchmarks.total_amount > (1.8 * booking_benchmarks.hotel_avg_amount)))
+              Rows Removed by Filter: 459426
+              Buffers: shared hit=10398, temp read=3587 written=2723
+              ->  WindowAgg  (cost=0.42..44560.44 rows=458910 width=128) (actual time=202.648..1347.608 rows=459468 loops=1)
+                    Output: b.booking_id, b.booking_ref, b.hotel_id, b.booking_date, b.total_amount, NULL::character varying(20), round(avg(b.total_amount) OVER (?), 2)
+                    Buffers: shared hit=10398, temp read=3587 written=2723
+                    ->  Index Scan using idx_booking_hotel on public.booking b  (cost=0.42..36529.52 rows=458910 width=38) (actual time=0.049..379.502 rows=459468 loops=1)
+                          Output: b.hotel_id, b.booking_id, b.booking_ref, b.booking_date, b.total_amount
+                          Filter: ((b.status)::text <> 'cancelled'::text)
+                          Rows Removed by Filter: 40532
+                          Buffers: shared hit=10398
+Planning Time: 0.258 ms
+Execution Time: 1424.091 ms

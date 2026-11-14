@@ -33,7 +33,7 @@ logs:
 
 # --- Portfolio targets ---
 
-.PHONY: p1 p1-test p2 p2-seed p3 p4 p5
+.PHONY: p1 p1-test p2 p2-seed p2-baseline p2-optimise p2-benchmark p3 p4 p5
 
 p1:
 	@echo "Portfolio 1: Applying schema to clean database..."
@@ -50,13 +50,27 @@ p1-test:
 		> portfolio-1-database-design/evidence/constraint-tests.txt 2>&1
 	@echo "Portfolio 1: Constraint tests complete. Evidence written to portfolio-1-database-design/evidence/constraint-tests.txt"
 
-p2:
-	@echo "Portfolio 2: Query Processing and Optimisation"
-	@echo "TODO: implement"
+p2: p2-optimise p2-benchmark
+	@echo "Portfolio 2: Complete optimisation and benchmarking workflow executed."
 
 p2-seed:
 	@echo "Portfolio 2: Seeding database with deterministic dataset..."
 	.venv/bin/python3 portfolio-2-query-optimisation/scripts/seed.py
+
+p2-baseline:
+	@echo "Portfolio 2: Capturing baseline execution plans..."
+	.venv/bin/python3 portfolio-2-query-optimisation/scripts/run_baseline.py
+
+p2-optimise:
+	@echo "Portfolio 2: Applying targeted indexes..."
+	docker compose exec -T postgres psql -U $(POSTGRES_USER) -d $(POSTGRES_DB) -v ON_ERROR_STOP=1 \
+		< portfolio-2-query-optimisation/sql/20_indexes.sql
+	docker compose exec -T postgres psql -U $(POSTGRES_USER) -d $(POSTGRES_DB) -c "ANALYZE;"
+	@echo "Portfolio 2: Targeted indexes applied and ANALYZE executed."
+
+p2-benchmark:
+	@echo "Portfolio 2: Running query benchmarking suite (3-run median)..."
+	.venv/bin/python3 portfolio-2-query-optimisation/scripts/benchmark.py
 
 p3:
 	@echo "Portfolio 3: Transactions and Concurrency"

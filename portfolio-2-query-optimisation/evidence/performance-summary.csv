@@ -1,0 +1,11 @@
+query,before_ms,after_ms,speedup_factor,time_reduction_pct,buffers_before,buffers_after,plan_change
+Q01,5.434,0.32,16.98x,94.1%,22,7,Index Scan + Quicksort -> Index Scan + Quicksort
+Q02,8112.588,2110.02,3.84x,74.0%,16169,16169,Seq Scan + Disk Sort -> Seq Scan + Disk Sort
+Q03,1663.924,114.84,14.49x,93.1%,13308,58010,Seq Scan + WindowAgg + Quicksort -> Index Only Scan + WindowAgg + Quicksort
+Q04,1266.47,221.74,5.71x,82.5%,79170,118415,Index Scan + WindowAgg + Quicksort -> Index Only Scan + WindowAgg + Quicksort
+Q05,577.843,289.2,2.0x,50.0%,7262,7262,Index Scan + Quicksort -> Index Scan + Quicksort
+Q06,32341.718,21262.44,1.52x,34.3%,789184,785623,Index Scan + SubPlan (Correlated) + Quicksort -> Index Scan + SubPlan (Correlated) + Quicksort
+Q07,1424.091,1061.5,1.34x,25.5%,13985,14002,Index Scan + SubPlan (Correlated) + WindowAgg -> Index Scan + WindowAgg + Quicksort
+Q08,32.978,0.44,74.95x,98.7%,37,37,Index Only Scan + Quicksort -> Index Only Scan + Quicksort
+Q09,7.035,0.44,15.99x,93.7%,6,6,Index Scan + Quicksort -> Index Scan + Quicksort
+Q10,134.572,0.59,228.09x,99.6%,6698,19,Index Scan + Quicksort -> Index Scan + Quicksort

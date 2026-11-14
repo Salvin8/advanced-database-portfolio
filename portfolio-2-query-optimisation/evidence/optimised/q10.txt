@@ -1,0 +1,96 @@
+=====================================================================
+OPTIMISED EXECUTION PLAN: Q10
+Environment: PostgreSQL 16 (Targeted Indexes & Windowing Applied)
+=====================================================================
+
+-- =============================================================================
+-- Q10: Date-Range Financial & Operational Report (December Peak Summary)
+-- =============================================================================
+-- Business Question:
+--   Generate a comprehensive December 2026 performance summary for all hotels:
+--   total room-nights occupied, gross revenue collected, average daily booking value,
+--   and count of cancellations vs completed stays.
+-- Expected Shape:
+--   One performance summary row per hotel for December 2026.
+
+--- QUERY SQL ---
+SELECT 
+    h.hotel_id,
+    h.name AS hotel_name,
+    h.city,
+    COUNT(DISTINCT b.booking_id) FILTER (WHERE b.status = 'checked_out') AS completed_bookings,
+    COUNT(DISTINCT b.booking_id) FILTER (WHERE b.status = 'cancelled') AS cancelled_bookings,
+    ROUND(
+        100.0 * COUNT(DISTINCT b.booking_id) FILTER (WHERE b.status = 'cancelled') 
+        / NULLIF(COUNT(DISTINCT b.booking_id), 0), 
+        1
+    ) AS cancellation_rate_pct,
+    SUM(br.check_out_date - br.check_in_date) FILTER (WHERE b.status = 'checked_out') AS total_room_nights_sold,
+    COALESCE(SUM(p.amount) FILTER (WHERE p.payment_status = 'completed'), 0) AS total_gross_revenue,
+    ROUND(
+        AVG(b.total_amount) FILTER (WHERE b.status = 'checked_out'), 
+        2
+    ) AS avg_booking_value
+FROM hotel h
+LEFT JOIN booking b 
+    ON h.hotel_id = b.hotel_id 
+    AND b.booking_date >= '2026-12-01' 
+    AND b.booking_date < '2027-01-01'
+LEFT JOIN booking_room br 
+    ON b.booking_id = br.booking_id
+LEFT JOIN payment p 
+    ON b.booking_id = p.booking_id
+GROUP BY h.hotel_id, h.name, h.city
+ORDER BY total_gross_revenue DESC;
+
+--- EXPLAIN (ANALYZE, BUFFERS) ---
+Sort  (cost=83.59..83.60 rows=6 width=158) (actual time=0.264..0.267 rows=6 loops=1)
+  Output: h.hotel_id, h.name, h.city, (count(DISTINCT b.booking_id) FILTER (WHERE ((b.status)::text = 'checked_out'::text))), (count(DISTINCT b.booking_id) FILTER (WHERE ((b.status)::text = 'cancelled'::text))), (round(((100.0 * (count(DISTINCT b.booking_id) FILTER (WHERE ((b.status)::text = 'cancelled'::text)))::numeric) / (NULLIF(count(DISTINCT b.booking_id), 0))::numeric), 1)), (sum((br.check_out_date - br.check_in_date)) FILTER (WHERE ((b.status)::text = 'checked_out'::text))), (COALESCE(sum(p.amount) FILTER (WHERE ((p.payment_status)::text = 'completed'::text)), '0'::numeric)), (round(avg(b.total_amount) FILTER (WHERE ((b.status)::text = 'checked_out'::text)), 2))
+  Sort Key: (COALESCE(sum(p.amount) FILTER (WHERE ((p.payment_status)::text = 'completed'::text)), '0'::numeric)) DESC
+  Sort Method: quicksort  Memory: 25kB
+  Buffers: shared hit=19
+  ->  GroupAggregate  (cost=83.10..83.51 rows=6 width=158) (actual time=0.235..0.246 rows=6 loops=1)
+        Output: h.hotel_id, h.name, h.city, count(DISTINCT b.booking_id) FILTER (WHERE ((b.status)::text = 'checked_out'::text)), count(DISTINCT b.booking_id) FILTER (WHERE ((b.status)::text = 'cancelled'::text)), round(((100.0 * (count(DISTINCT b.booking_id) FILTER (WHERE ((b.status)::text = 'cancelled'::text)))::numeric) / (NULLIF(count(DISTINCT b.booking_id), 0))::numeric), 1), sum((br.check_out_date - br.check_in_date)) FILTER (WHERE ((b.status)::text = 'checked_out'::text)), COALESCE(sum(p.amount) FILTER (WHERE ((p.payment_status)::text = 'completed'::text)), '0'::numeric), round(avg(b.total_amount) FILTER (WHERE ((b.status)::text = 'checked_out'::text)), 2)
+        Group Key: h.hotel_id
+        Buffers: shared hit=19
+        ->  Sort  (cost=83.10..83.12 rows=6 width=82) (actual time=0.174..0.177 rows=6 loops=1)
+              Output: h.hotel_id, h.name, h.city, b.booking_id, b.status, br.check_out_date, br.check_in_date, p.amount, p.payment_status, b.total_amount
+              Sort Key: h.hotel_id, b.booking_id
+              Sort Method: quicksort  Memory: 25kB
+              Buffers: shared hit=19
+              ->  Nested Loop Left Join  (cost=1.29..83.03 rows=6 width=82) (actual time=0.068..0.146 rows=6 loops=1)
+                    Output: h.hotel_id, h.name, h.city, b.booking_id, b.status, br.check_out_date, br.check_in_date, p.amount, p.payment_status, b.total_amount
+                    Buffers: shared hit=19
+                    ->  Nested Loop Left Join  (cost=0.85..67.41 rows=6 width=67) (actual time=0.052..0.125 rows=6 loops=1)
+                          Output: h.hotel_id, h.name, h.city, b.booking_id, b.status, b.total_amount, br.check_out_date, br.check_in_date
+                          Buffers: shared hit=19
+                          ->  Nested Loop Left Join  (cost=0.42..51.79 rows=6 width=59) (actual time=0.037..0.103 rows=6 loops=1)
+                                Output: h.hotel_id, h.name, h.city, b.booking_id, b.status, b.total_amount
+                                Buffers: shared hit=19
+                                ->  Seq Scan on public.hotel h  (cost=0.00..1.06 rows=6 width=38) (actual time=0.007..0.009 rows=6 loops=1)
+                                      Output: h.hotel_id, h.name, h.city, h.address, h.phone, h.email, h.star_rating, h.created_at, h.updated_at
+                                      Buffers: shared hit=1
+                                ->  Index Scan using idx_booking_hotel_date on public.booking b  (cost=0.42..8.44 rows=1 width=25) (actual time=0.014..0.014 rows=0 loops=6)
+                                      Output: b.booking_id, b.guest_id, b.hotel_id, b.booking_ref, b.status, b.booking_date, b.total_amount, b.notes, b.created_at, b.updated_at
+                                      Index Cond: ((b.hotel_id = h.hotel_id) AND (b.booking_date >= '2026-12-01 00:00:00+00'::timestamp with time zone) AND (b.booking_date < '2027-01-01 00:00:00+00'::timestamp with time zone))
+                                      Buffers: shared hit=18
+                          ->  Memoize  (cost=0.43..8.45 rows=1 width=12) (actual time=0.003..0.003 rows=0 loops=6)
+                                Output: br.check_out_date, br.check_in_date, br.booking_id
+                                Cache Key: b.booking_id
+                                Cache Mode: logical
+                                Hits: 5  Misses: 1  Evictions: 0  Overflows: 0  Memory Usage: 1kB
+                                ->  Index Scan using idx_booking_room_fk_booking on public.booking_room br  (cost=0.42..8.44 rows=1 width=12) (actual time=0.011..0.011 rows=0 loops=1)
+                                      Output: br.check_out_date, br.check_in_date, br.booking_id
+                                      Index Cond: (br.booking_id = b.booking_id)
+                    ->  Memoize  (cost=0.43..8.45 rows=1 width=19) (actual time=0.003..0.003 rows=0 loops=6)
+                          Output: p.amount, p.payment_status, p.booking_id
+                          Cache Key: b.booking_id
+                          Cache Mode: logical
+                          Hits: 5  Misses: 1  Evictions: 0  Overflows: 0  Memory Usage: 1kB
+                          ->  Index Scan using idx_payment_booking on public.payment p  (cost=0.42..8.44 rows=1 width=19) (actual time=0.013..0.013 rows=0 loops=1)
+                                Output: p.amount, p.payment_status, p.booking_id
+                                Index Cond: (p.booking_id = b.booking_id)
+Planning:
+  Buffers: shared hit=68
+Planning Time: 1.736 ms
+Execution Time: 0.515 ms

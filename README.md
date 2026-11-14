@@ -18,7 +18,7 @@
 | Portfolio | Title | Status |
 |-----------|-------|--------|
 | P1 | Database Design and Modelling | Completed |
-| P2 | Query Processing and Optimisation | Not started |
+| P2 | Query Processing and Optimisation | Completed |
 | P3 | Transactions and Concurrency | Not started |
 | P4 | NoSQL and Advanced Data Models | Not started |
 | P5 | Distributed and Cloud Database Exercise | Not started |

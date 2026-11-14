@@ -1,0 +1,32 @@
+=====================================================================
+SAMPLE QUERY RESULTS: Q04
+=====================================================================
+
+-- =============================================================================
+-- Q04: Window Function (Hotel Performance Ranking by Quarterly Revenue)
+-- =============================================================================
+-- Business Question:
+--   Rank all 6 hotel properties by quarter for the year 2026 based on their total
+--   completed revenue, assigning a dense rank (1 to 6) per quarter.
+-- Expected Shape:
+--   Quarterly hotel rankings (quarter, rank, hotel_name, revenue, room_nights_sold).
+
+booking_quarter | revenue_rank | hotel_name                         | total_revenue | total_room_stays
+----------------+--------------+------------------------------------+---------------+-----------------
+1               | 1            | Savannah Crest Abuja               | 318793750.00  | 2370            
+1               | 2            | Savannah Crest Victoria Island     | 297113750.00  | 2223            
+1               | 3            | Savannah Crest Kano Royal          | 246409000.00  | 2253            
+1               | 4            | Savannah Crest Port Harcourt       | 243582000.00  | 2252            
+1               | 5            | Savannah Crest Independence Layout | 234372000.00  | 2162            
+1               | 6            | Savannah Crest Bodija              | 230676000.00  | 2138            
+2               | 1            | Savannah Crest Abuja               | 114702500.00  | 726             
+2               | 2            | Savannah Crest Victoria Island     | 71811250.00   | 557             
+2               | 3            | Savannah Crest Kano Royal          | 66005000.00   | 619             
+2               | 4            | Savannah Crest Bodija              | 61771000.00   | 527             
+2               | 5            | Savannah Crest Independence Layout | 48406000.00   | 450             
+2               | 6            | Savannah Crest Port Harcourt       | 39433000.00   | 406             
+3               | 1            | Savannah Crest Abuja               | 3756250.00    | 21              
+3               | 2            | Savannah Crest Kano Royal          | 2727000.00    | 27              
+3               | 3            | Savannah Crest Victoria Island     | 2452500.00    | 21              
+3               | 4            | Savannah Crest Bodija              | 1110000.00    | 15              
+3               | 5            | Savannah Crest Independence Layout | 990000.00     | 11              

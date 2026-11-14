@@ -1,0 +1,95 @@
+=====================================================================
+BASELINE EXECUTION PLAN: Q06
+Environment: PostgreSQL 16 (P1 Base Schema, Baseline Indexes Only)
+=====================================================================
+
+-- =============================================================================
+-- Q06: Correlated Subquery (High-Value Bookings Above Hotel-Specific Average)
+-- =============================================================================
+-- Business Question:
+--   Identify individual bookings in 2026 whose total transaction value exceeds
+--   the overall average booking value for that specific hotel by at least 80%.
+-- Expected Shape:
+--   List of premium bookings (booking_ref, hotel_id, total_amount, hotel_avg_amount),
+--   computed via a correlated subquery in the WHERE clause.
+
+--- QUERY SQL ---
+SELECT 
+    b1.booking_id,
+    b1.booking_ref,
+    b1.hotel_id,
+    b1.booking_date,
+    b1.total_amount,
+    ROUND(
+        (SELECT AVG(b2.total_amount) 
+         FROM booking b2 
+         WHERE b2.hotel_id = b1.hotel_id 
+           AND b2.status != 'cancelled'
+        ), 2
+    ) AS hotel_avg_amount
+FROM booking b1
+WHERE b1.booking_date >= '2026-06-01' 
+  AND b1.booking_date < '2026-12-31'
+  AND b1.status != 'cancelled'
+  AND b1.total_amount > 1.8 * (
+      SELECT AVG(b2.total_amount)
+      FROM booking b2
+      WHERE b2.hotel_id = b1.hotel_id
+        AND b2.status != 'cancelled'
+  )
+ORDER BY b1.total_amount DESC
+LIMIT 50;
+
+--- EXPLAIN (ANALYZE, BUFFERS) ---
+Limit  (cost=4516108447.83..4516560785.90 rows=50 width=70) (actual time=30190.938..32325.918 rows=42 loops=1)
+  Output: b1.booking_id, b1.booking_ref, b1.hotel_id, b1.booking_date, b1.total_amount, (round((SubPlan 1), 2))
+  Buffers: shared hit=779301 read=9883
+  ->  Result  (cost=4516108447.83..4523101594.28 rows=773 width=70) (actual time=28552.344..30687.251 rows=42 loops=1)
+        Output: b1.booking_id, b1.booking_ref, b1.hotel_id, b1.booking_date, b1.total_amount, round((SubPlan 1), 2)
+        Buffers: shared hit=779301 read=9883
+        ->  Sort  (cost=4516108447.83..4516108449.77 rows=773 width=38) (actual time=28479.496..28479.545 rows=42 loops=1)
+              Output: b1.booking_id, b1.booking_ref, b1.hotel_id, b1.booking_date, b1.total_amount
+              Sort Key: b1.total_amount DESC
+              Sort Method: quicksort  Memory: 27kB
+              Buffers: shared hit=706423 read=9883
+              ->  Seq Scan on public.booking b1  (cost=0.00..4516108422.16 rows=773 width=38) (actual time=546.301..28479.360 rows=42 loops=1)
+                    Output: b1.booking_id, b1.booking_ref, b1.hotel_id, b1.booking_date, b1.total_amount
+                    Filter: ((b1.booking_date >= '2026-06-01 00:00:00+00'::timestamp with time zone) AND (b1.booking_date < '2026-12-31 00:00:00+00'::timestamp with time zone) AND ((b1.status)::text <> 'cancelled'::text) AND (b1.total_amount > (1.8 * (SubPlan 2))))
+                    Rows Removed by Filter: 499958
+                    Buffers: shared hit=706423 read=9883
+                    SubPlan 2
+                      ->  Aggregate  (cost=9046.74..9046.75 rows=1 width=32) (actual time=69.350..69.350 rows=1 loops=409)
+                            Output: avg(b2_1.total_amount)
+                            Buffers: shared hit=704251 read=5359
+                            ->  Bitmap Heap Scan on public.booking b2_1  (cost=911.54..8855.52 rows=76485 width=6) (actual time=7.575..44.180 rows=76630 loops=409)
+                                  Output: b2_1.booking_id, b2_1.guest_id, b2_1.hotel_id, b2_1.booking_ref, b2_1.status, b2_1.booking_date, b2_1.total_amount, b2_1.notes, b2_1.created_at, b2_1.updated_at
+                                  Recheck Cond: (b2_1.hotel_id = b1.hotel_id)
+                                  Filter: ((b2_1.status)::text <> 'cancelled'::text)
+                                  Rows Removed by Filter: 6720
+                                  Heap Blocks: exact=681798
+                                  Buffers: shared hit=704251 read=5359
+                                  ->  Bitmap Index Scan on idx_booking_hotel  (cost=0.00..892.41 rows=83199 width=0) (actual time=7.046..7.046 rows=83349 loops=409)
+                                        Index Cond: (b2_1.hotel_id = b1.hotel_id)
+                                        Buffers: shared hit=27489 read=323
+        SubPlan 1
+          ->  Aggregate  (cost=9046.74..9046.75 rows=1 width=32) (actual time=52.549..52.549 rows=1 loops=42)
+                Output: avg(b2.total_amount)
+                Buffers: shared hit=72878
+                ->  Bitmap Heap Scan on public.booking b2  (cost=911.54..8855.52 rows=76485 width=6) (actual time=5.266..32.385 rows=76659 loops=42)
+                      Output: b2.booking_id, b2.guest_id, b2.hotel_id, b2.booking_ref, b2.status, b2.booking_date, b2.total_amount, b2.notes, b2.created_at, b2.updated_at
+                      Recheck Cond: (b2.hotel_id = b1.hotel_id)
+                      Filter: ((b2.status)::text <> 'cancelled'::text)
+                      Rows Removed by Filter: 6700
+                      Heap Blocks: exact=70022
+                      Buffers: shared hit=72878
+                      ->  Bitmap Index Scan on idx_booking_hotel  (cost=0.00..892.41 rows=83199 width=0) (actual time=4.770..4.771 rows=83360 loops=42)
+                            Index Cond: (b2.hotel_id = b1.hotel_id)
+                            Buffers: shared hit=2856
+Planning:
+  Buffers: shared hit=2
+Planning Time: 0.759 ms
+JIT:
+  Functions: 27
+  Options: Inlining true, Optimization true, Expressions true, Deforming true
+  Timing: Generation 13.052 ms, Inlining 421.637 ms, Optimization 779.335 ms, Emission 437.884 ms, Total 1651.908 ms
+Execution Time: 32341.718 ms

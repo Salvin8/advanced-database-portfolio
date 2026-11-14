@@ -1,0 +1,15 @@
+=====================================================================
+SAMPLE QUERY RESULTS: Q09
+=====================================================================
+
+-- =============================================================================
+-- Q09: Comprehensive Guest Dossier / History Lookup
+-- =============================================================================
+-- Business Question:
+--   Retrieve the comprehensive profile and chronological stay history for guest
+--   email 'chinedu.okonkwo1@mail.ng'. Fetches booking references, hotel stayed at,
+--   room number, stay dates, amount billed, and payment records.
+-- Expected Shape:
+--   Chronological booking history for customer service / front desk CRM lookup.
+
+No rows returned.

@@ -1,0 +1,141 @@
+=====================================================================
+BASELINE EXECUTION PLAN: Q02
+Environment: PostgreSQL 16 (P1 Base Schema, Baseline Indexes Only)
+=====================================================================
+
+-- =============================================================================
+-- Q02: Multi-Table Aggregation with GROUP BY and HAVING (High-Value VIP Guests)
+-- =============================================================================
+-- Business Question:
+--   Identify high-value VIP guests who have completed at least 8 separate bookings
+--   and accumulated over ₦1,200,000 in completed payments across the chain.
+-- Expected Shape:
+--   Aggregated summary per guest (guest_id, name, email, booking count, total spend, avg spend),
+--   sorted by total spend descending.
+
+--- QUERY SQL ---
+SELECT 
+    g.guest_id,
+    g.first_name || ' ' || g.last_name AS guest_name,
+    g.email,
+    g.nationality,
+    COUNT(DISTINCT b.booking_id) AS total_bookings,
+    SUM(p.amount) AS total_amount_paid,
+    ROUND(AVG(p.amount), 2) AS avg_payment_per_booking
+FROM guest g
+JOIN booking b ON g.guest_id = b.guest_id
+JOIN payment p ON b.booking_id = p.booking_id
+WHERE p.payment_status = 'completed'
+  AND b.status = 'checked_out'
+GROUP BY g.guest_id, g.first_name, g.last_name, g.email, g.nationality
+HAVING COUNT(DISTINCT b.booking_id) >= 8
+   AND SUM(p.amount) >= 1200000.00
+ORDER BY total_amount_paid DESC
+LIMIT 50;
+
+--- EXPLAIN (ANALYZE, BUFFERS) ---
+Limit  (cost=100388.70..100388.82 rows=50 width=157) (actual time=6741.604..6795.487 rows=50 loops=1)
+  Output: g.guest_id, ((((g.first_name)::text || ' '::text) || (g.last_name)::text)), g.email, g.nationality, (count(DISTINCT b.booking_id)), (sum(p.amount)), (round(avg(p.amount), 2)), g.first_name, g.last_name
+  Buffers: shared hit=5966 read=10203, temp read=4069 written=4081
+  ->  Sort  (cost=100388.70..100402.59 rows=5556 width=157) (actual time=6281.614..6335.487 rows=50 loops=1)
+        Output: g.guest_id, ((((g.first_name)::text || ' '::text) || (g.last_name)::text)), g.email, g.nationality, (count(DISTINCT b.booking_id)), (sum(p.amount)), (round(avg(p.amount), 2)), g.first_name, g.last_name
+        Sort Key: (sum(p.amount)) DESC
+        Sort Method: top-N heapsort  Memory: 36kB
+        Buffers: shared hit=5966 read=10203, temp read=4069 written=4081
+        ->  GroupAggregate  (cost=46845.14..100204.13 rows=5556 width=157) (actual time=5032.381..6309.659 rows=8568 loops=1)
+              Output: g.guest_id, (((g.first_name)::text || ' '::text) || (g.last_name)::text), g.email, g.nationality, count(DISTINCT b.booking_id), sum(p.amount), round(avg(p.amount), 2), g.first_name, g.last_name
+              Group Key: g.guest_id
+              Filter: ((count(DISTINCT b.booking_id) >= 8) AND (sum(p.amount) >= 1200000.00))
+              Rows Removed by Filter: 41000
+              Buffers: shared hit=5963 read=10203, temp read=4069 written=4081
+              ->  Gather Merge  (cost=46845.14..95997.25 rows=422028 width=63) (actual time=5028.621..5778.957 rows=439550 loops=1)
+                    Output: g.guest_id, g.first_name, g.last_name, g.email, g.nationality, b.booking_id, p.amount
+                    Workers Planned: 2
+                    Workers Launched: 2
+                    Buffers: shared hit=5963 read=10203, temp read=4069 written=4081
+                    ->  Sort  (cost=45845.11..46284.73 rows=175845 width=63) (actual time=4740.026..4890.535 rows=146517 loops=3)
+                          Output: g.guest_id, g.first_name, g.last_name, g.email, g.nationality, b.booking_id, p.amount
+                          Sort Key: g.guest_id, b.booking_id
+                          Sort Method: external merge  Disk: 10616kB
+                          Buffers: shared hit=5963 read=10203, temp read=4069 written=4081
+                          Worker 0:  actual time=4598.162..4757.791 rows=148912 loops=1
+                            Sort Method: external merge  Disk: 11024kB
+                            JIT:
+                              Functions: 23
+                              Options: Inlining false, Optimization false, Expressions true, Deforming true
+                              Timing: Generation 72.010 ms, Inlining 0.000 ms, Optimization 38.315 ms, Emission 304.162 ms, Total 414.488 ms
+                            Buffers: shared hit=2110 read=3172, temp read=1378 written=1382
+                          Worker 1:  actual time=4644.573..4782.061 rows=147292 loops=1
+                            Sort Method: external merge  Disk: 10912kB
+                            JIT:
+                              Functions: 23
+                              Options: Inlining false, Optimization false, Expressions true, Deforming true
+                              Timing: Generation 23.879 ms, Inlining 0.000 ms, Optimization 12.060 ms, Emission 795.467 ms, Total 831.406 ms
+                            Buffers: shared hit=1954 read=3039, temp read=1364 written=1368
+                          ->  Hash Join  (cost=13617.75..23914.05 rows=175845 width=63) (actual time=2538.296..3694.806 rows=146517 loops=3)
+                                Output: g.guest_id, g.first_name, g.last_name, g.email, g.nationality, b.booking_id, p.amount
+                                Inner Unique: true
+                                Hash Cond: (b.guest_id = g.guest_id)
+                                Buffers: shared hit=5889 read=10203
+                                Worker 0:  actual time=2341.766..3583.786 rows=148912 loops=1
+                                  Buffers: shared hit=2073 read=3172
+                                Worker 1:  actual time=2456.943..3485.003 rows=147292 loops=1
+                                  Buffers: shared hit=1917 read=3039
+                                ->  Parallel Hash Join  (cost=11580.75..21415.41 rows=175845 width=14) (actual time=1623.471..2444.116 rows=146517 loops=3)
+                                      Output: b.booking_id, b.guest_id, p.amount
+                                      Inner Unique: true
+                                      Hash Cond: (p.booking_id = b.booking_id)
+                                      Buffers: shared hit=3093 read=10203
+                                      Worker 0:  actual time=1159.976..2019.972 rows=148912 loops=1
+                                        Buffers: shared hit=1131 read=3172
+                                      Worker 1:  actual time=1184.924..1938.367 rows=147292 loops=1
+                                        Buffers: shared hit=975 read=3039
+                                      ->  Parallel Seq Scan on public.payment p  (cost=0.00..9309.39 rows=200104 width=10) (actual time=0.259..547.600 rows=159890 loops=3)
+                                            Output: p.payment_id, p.booking_id, p.amount, p.payment_method, p.payment_status, p.transaction_ref, p.payment_date, p.created_at
+                                            Filter: ((p.payment_status)::text = 'completed'::text)
+                                            Rows Removed by Filter: 13511
+                                            Buffers: shared hit=1660 read=4940
+                                            Worker 0:  actual time=0.361..562.027 rows=162625 loops=1
+                                              Buffers: shared hit=570 read=1664
+                                            Worker 1:  actual time=0.257..542.593 rows=160675 loops=1
+                                              Buffers: shared hit=504 read=1704
+                                      ->  Parallel Hash  (cost=9295.97..9295.97 rows=182782 width=8) (actual time=1601.873..1601.874 rows=146517 loops=3)
+                                            Output: b.booking_id, b.guest_id
+                                            Buckets: 524288  Batches: 1  Memory Usage: 21344kB
+                                            Buffers: shared hit=1433 read=5263
+                                            Worker 0:  actual time=1159.399..1159.400 rows=135995 loops=1
+                                              Buffers: shared hit=561 read=1508
+                                            Worker 1:  actual time=1184.239..1184.241 rows=118362 loops=1
+                                              Buffers: shared hit=471 read=1335
+                                            ->  Parallel Seq Scan on public.booking b  (cost=0.00..9295.97 rows=182782 width=8) (actual time=0.467..1050.233 rows=146517 loops=3)
+                                                  Output: b.booking_id, b.guest_id
+                                                  Filter: ((b.status)::text = 'checked_out'::text)
+                                                  Rows Removed by Filter: 20150
+                                                  Buffers: shared hit=1433 read=5263
+                                                  Worker 0:  actual time=0.902..767.980 rows=135995 loops=1
+                                                    Buffers: shared hit=561 read=1508
+                                                  Worker 1:  actual time=0.288..791.534 rows=118362 loops=1
+                                                    Buffers: shared hit=471 read=1335
+                                ->  Hash  (cost=1412.00..1412.00 rows=50000 width=53) (actual time=785.185..785.194 rows=50000 loops=3)
+                                      Output: g.guest_id, g.first_name, g.last_name, g.email, g.nationality
+                                      Buckets: 65536  Batches: 1  Memory Usage: 4719kB
+                                      Buffers: shared hit=2736
+                                      Worker 0:  actual time=842.300..842.301 rows=50000 loops=1
+                                        Buffers: shared hit=912
+                                      Worker 1:  actual time=1226.212..1226.213 rows=50000 loops=1
+                                        Buffers: shared hit=912
+                                      ->  Seq Scan on public.guest g  (cost=0.00..1412.00 rows=50000 width=53) (actual time=384.644..458.688 rows=50000 loops=3)
+                                            Output: g.guest_id, g.first_name, g.last_name, g.email, g.nationality
+                                            Buffers: shared hit=2736
+                                            Worker 0:  actual time=344.745..394.822 rows=50000 loops=1
+                                              Buffers: shared hit=912
+                                            Worker 1:  actual time=809.080..856.472 rows=50000 loops=1
+                                              Buffers: shared hit=912
+Planning:
+  Buffers: shared hit=69 read=3
+Planning Time: 10.627 ms
+JIT:
+  Functions: 74
+  Options: Inlining false, Optimization false, Expressions true, Deforming true
+  Timing: Generation 107.716 ms, Inlining 0.000 ms, Optimization 73.922 ms, Emission 1536.253 ms, Total 1717.891 ms
+Execution Time: 8112.588 ms

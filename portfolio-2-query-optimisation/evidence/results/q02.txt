@@ -1,0 +1,43 @@
+=====================================================================
+SAMPLE QUERY RESULTS: Q02
+=====================================================================
+
+-- =============================================================================
+-- Q02: Multi-Table Aggregation with GROUP BY and HAVING (High-Value VIP Guests)
+-- =============================================================================
+-- Business Question:
+--   Identify high-value VIP guests who have completed at least 8 separate bookings
+--   and accumulated over ₦1,200,000 in completed payments across the chain.
+-- Expected Shape:
+--   Aggregated summary per guest (guest_id, name, email, booking count, total spend, avg spend),
+--   sorted by total spend descending.
+
+guest_id | guest_name       | email                        | nationality | total_bookings | total_amount_paid | avg_payment_per_booking
+---------+------------------+------------------------------+-------------+----------------+-------------------+------------------------
+3237     | Musa Adebayo     | musa.adebayo3237@mail.ng     | Nigerian    | 40             | 7897250.00        | 197431.25              
+600      | Ruth Aliyu       | ruth.aliyu600@mail.ng        | Nigerian    | 35             | 7886000.00        | 225314.29              
+1235     | Hadiza Okoro     | hadiza.okoro1235@mail.ng     | American    | 47             | 7665750.00        | 163101.06              
+6728     | Jumoke Garba     | jumoke.garba6728@mail.ng     | Nigerian    | 41             | 7659000.00        | 186804.88              
+847      | Joy Balogun      | joy.balogun847@mail.ng       | Nigerian    | 46             | 7609250.00        | 165418.48              
+4518     | Bilikisu Gidado  | bilikisu.gidado4518@mail.ng  | Nigerian    | 44             | 7366500.00        | 167420.45              
+3874     | Mohammed Fashola | mohammed.fashola3874@mail.ng | Nigerian    | 42             | 7357250.00        | 175172.62              
+4520     | Tunde Igwe       | tunde.igwe4520@mail.ng       | Nigerian    | 44             | 7270250.00        | 165232.95              
+2021     | Kelechi Fashola  | kelechi.fashola2021@mail.ng  | Nigerian    | 47             | 7255500.00        | 154372.34              
+5915     | Victor Okoro     | victor.okoro5915@mail.ng     | Nigerian    | 36             | 7224000.00        | 200666.67              
+3353     | Aliyu Ogundipe   | aliyu.ogundipe3353@mail.ng   | Nigerian    | 48             | 7188750.00        | 149765.63              
+4427     | Adeola Ajayi     | adeola.ajayi4427@mail.ng     | Nigerian    | 47             | 7187250.00        | 152920.21              
+226      | Esther Kalu      | esther.kalu226@mail.ng       | Nigerian    | 37             | 7162000.00        | 193567.57              
+4810     | Folake Adeleke   | folake.adeleke4810@mail.ng   | Nigerian    | 45             | 7144000.00        | 158755.56              
+6655     | Chidi Yusuf      | chidi.yusuf6655@mail.ng      | British     | 42             | 7047000.00        | 167785.71              
+3802     | Chinedu Bello    | chinedu.bello3802@mail.ng    | Nigerian    | 41             | 6995250.00        | 170615.85              
+4833     | Folake Okoro     | folake.okoro4833@mail.ng     | Nigerian    | 54             | 6907500.00        | 127916.67              
+4924     | Oluwaseun Garba  | oluwaseun.garba4924@mail.ng  | Nigerian    | 43             | 6888250.00        | 160191.86              
+5267     | Grace Bello      | grace.bello5267@mail.ng      | Nigerian    | 48             | 6862750.00        | 142973.96              
+6808     | Ibrahim Nwosu    | ibrahim.nwosu6808@mail.ng    | Nigerian    | 46             | 6816250.00        | 148179.35              
+1373     | Maryam Nnamani   | maryam.nnamani1373@mail.ng   | Nigerian    | 48             | 6810500.00        | 141885.42              
+2650     | Umar Balogun     | umar.balogun2650@mail.ng     | Nigerian    | 39             | 6767250.00        | 173519.23              
+2640     | Samuel Uba       | samuel.uba2640@mail.ng       | Nigerian    | 37             | 6766500.00        | 182878.38              
+1104     | Zainab Sanusi    | zainab.sanusi1104@mail.ng    | Nigerian    | 49             | 6745250.00        | 137658.16              
+941      | Peter Okoro      | peter.okoro941@mail.ng       | Nigerian    | 46             | 6732750.00        | 146364.13              
+
+(... truncated to first 25 rows ...)

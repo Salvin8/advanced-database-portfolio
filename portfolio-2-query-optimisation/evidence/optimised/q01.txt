@@ -1,0 +1,101 @@
+=====================================================================
+OPTIMISED EXECUTION PLAN: Q01
+Environment: PostgreSQL 16 (Targeted Indexes & Windowing Applied)
+=====================================================================
+
+-- =============================================================================
+-- Q01: Multi-Table Operational Join (Front Desk Arrival & Check-In Roster)
+-- =============================================================================
+-- Business Question:
+--   Retrieve the front desk arrival roster for Savannah Crest Abuja (hotel_id = 1)
+--   for check-in on '2026-12-20'. Returns guest names, contact details, room number,
+--   room category, stay dates, nightly tariff, total booking value, and payment status.
+-- Expected Shape:
+--   Tabular roster of individual room check-ins ordered by room number.
+
+--- QUERY SQL ---
+SELECT 
+    b.booking_ref,
+    g.first_name || ' ' || g.last_name AS guest_name,
+    g.phone AS guest_phone,
+    r.room_number,
+    rt.name AS room_category,
+    br.check_in_date,
+    br.check_out_date,
+    (br.check_out_date - br.check_in_date) AS nights,
+    br.rate_per_night,
+    b.total_amount,
+    COALESCE(p.payment_status, 'unpaid') AS payment_status
+FROM booking b
+JOIN guest g ON b.guest_id = g.guest_id
+JOIN hotel h ON b.hotel_id = h.hotel_id
+JOIN booking_room br ON b.booking_id = br.booking_id
+JOIN room r ON br.room_id = r.room_id
+JOIN room_type rt ON r.room_type_id = rt.room_type_id
+LEFT JOIN payment p ON b.booking_id = p.booking_id AND p.payment_status = 'completed'
+WHERE b.hotel_id = 1
+  AND br.check_in_date = '2026-12-20'
+  AND br.status != 'cancelled'
+ORDER BY r.room_number;
+
+--- EXPLAIN (ANALYZE, BUFFERS) ---
+Sort  (cost=1994.47..1994.55 rows=32 width=138) (actual time=0.138..0.141 rows=0 loops=1)
+  Output: b.booking_ref, ((((g.first_name)::text || ' '::text) || (g.last_name)::text)), g.phone, r.room_number, rt.name, br.check_in_date, br.check_out_date, ((br.check_out_date - br.check_in_date)), br.rate_per_night, b.total_amount, (COALESCE(p.payment_status, 'unpaid'::character varying))
+  Sort Key: r.room_number
+  Sort Method: quicksort  Memory: 25kB
+  Buffers: shared hit=7
+  ->  Nested Loop Left Join  (cost=1.83..1993.67 rows=32 width=138) (actual time=0.049..0.051 rows=0 loops=1)
+        Output: b.booking_ref, (((g.first_name)::text || ' '::text) || (g.last_name)::text), g.phone, r.room_number, rt.name, br.check_in_date, br.check_out_date, (br.check_out_date - br.check_in_date), br.rate_per_night, b.total_amount, COALESCE(p.payment_status, 'unpaid'::character varying)
+        Buffers: shared hit=4
+        ->  Nested Loop  (cost=1.41..1966.78 rows=32 width=88) (actual time=0.049..0.050 rows=0 loops=1)
+              Output: b.booking_ref, b.total_amount, b.booking_id, g.first_name, g.last_name, g.phone, br.check_in_date, br.check_out_date, br.rate_per_night, r.room_number, rt.name
+              Inner Unique: true
+              Join Filter: (r.room_type_id = rt.room_type_id)
+              Buffers: shared hit=4
+              ->  Nested Loop  (cost=1.41..1964.09 rows=32 width=77) (actual time=0.048..0.050 rows=0 loops=1)
+                    Output: b.booking_ref, b.total_amount, b.booking_id, g.first_name, g.last_name, g.phone, br.check_in_date, br.check_out_date, br.rate_per_night, r.room_number, r.room_type_id
+                    Inner Unique: true
+                    Buffers: shared hit=4
+                    ->  Nested Loop  (cost=1.14..1949.40 rows=32 width=73) (actual time=0.048..0.049 rows=0 loops=1)
+                          Output: b.booking_ref, b.total_amount, b.booking_id, g.first_name, g.last_name, g.phone, br.check_in_date, br.check_out_date, br.rate_per_night, br.room_id
+                          Buffers: shared hit=4
+                          ->  Seq Scan on public.hotel h  (cost=0.00..1.07 rows=1 width=4) (actual time=0.019..0.020 rows=1 loops=1)
+                                Output: h.hotel_id, h.name, h.city, h.address, h.phone, h.email, h.star_rating, h.created_at, h.updated_at
+                                Filter: (h.hotel_id = 1)
+                                Rows Removed by Filter: 5
+                                Buffers: shared hit=1
+                          ->  Nested Loop  (cost=1.14..1948.01 rows=32 width=77) (actual time=0.026..0.027 rows=0 loops=1)
+                                Output: b.booking_ref, b.total_amount, b.hotel_id, b.booking_id, g.first_name, g.last_name, g.phone, br.check_in_date, br.check_out_date, br.rate_per_night, br.room_id
+                                Inner Unique: true
+                                Buffers: shared hit=3
+                                ->  Nested Loop  (cost=0.84..1936.57 rows=32 width=52) (actual time=0.026..0.027 rows=0 loops=1)
+                                      Output: b.booking_ref, b.total_amount, b.guest_id, b.hotel_id, b.booking_id, br.check_in_date, br.check_out_date, br.rate_per_night, br.room_id
+                                      Inner Unique: true
+                                      Buffers: shared hit=3
+                                      ->  Index Scan using idx_booking_room_dates on public.booking_room br  (cost=0.42..371.61 rows=192 width=22) (actual time=0.026..0.026 rows=0 loops=1)
+                                            Output: br.booking_room_id, br.booking_id, br.room_id, br.check_in_date, br.check_out_date, br.stay, br.rate_per_night, br.num_guests, br.status
+                                            Index Cond: (br.check_in_date = '2026-12-20'::date)
+                                            Filter: ((br.status)::text <> 'cancelled'::text)
+                                            Buffers: shared hit=3
+                                      ->  Index Scan using booking_pkey on public.booking b  (cost=0.42..8.15 rows=1 width=34) (never executed)
+                                            Output: b.booking_id, b.guest_id, b.hotel_id, b.booking_ref, b.status, b.booking_date, b.total_amount, b.notes, b.created_at, b.updated_at
+                                            Index Cond: (b.booking_id = br.booking_id)
+                                            Filter: (b.hotel_id = 1)
+                                ->  Index Scan using guest_pkey on public.guest g  (cost=0.29..0.36 rows=1 width=33) (never executed)
+                                      Output: g.guest_id, g.first_name, g.last_name, g.email, g.phone, g.id_type, g.id_number, g.nationality, g.date_of_birth, g.created_at, g.updated_at
+                                      Index Cond: (g.guest_id = b.guest_id)
+                    ->  Index Scan using room_pkey on public.room r  (cost=0.28..0.46 rows=1 width=12) (never executed)
+                          Output: r.room_id, r.hotel_id, r.room_type_id, r.room_number, r.floor, r.is_active
+                          Index Cond: (r.room_id = br.room_id)
+              ->  Materialize  (cost=0.00..1.06 rows=4 width=19) (never executed)
+                    Output: rt.name, rt.room_type_id
+                    ->  Seq Scan on public.room_type rt  (cost=0.00..1.04 rows=4 width=19) (never executed)
+                          Output: rt.name, rt.room_type_id
+        ->  Index Scan using idx_payment_booking on public.payment p  (cost=0.42..0.82 rows=1 width=13) (never executed)
+              Output: p.payment_id, p.booking_id, p.amount, p.payment_method, p.payment_status, p.transaction_ref, p.payment_date, p.created_at
+              Index Cond: (p.booking_id = b.booking_id)
+              Filter: ((p.payment_status)::text = 'completed'::text)
+Planning:
+  Buffers: shared hit=791 dirtied=17
+Planning Time: 23.807 ms
+Execution Time: 0.559 ms

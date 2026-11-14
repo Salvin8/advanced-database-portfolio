@@ -1,0 +1,28 @@
+=====================================================================
+SAMPLE QUERY RESULTS: Q05
+=====================================================================
+
+-- =============================================================================
+-- Q05: Common Table Expression (Length-of-Stay Segmentation & Yield Analysis)
+-- =============================================================================
+-- Business Question:
+--   Segment all completed stays in 2026 into length-of-stay duration tiers:
+--   '1-2 Nights' (Short/Business), '3-5 Nights' (Medium/Leisure), '6+ Nights' (Extended),
+--   evaluating the total revenue contribution, average nightly rate, and total volume per tier.
+-- Expected Shape:
+--   One summary row per hotel and duration tier.
+
+hotel_name                         | stay_tier           | total_stays | avg_nights | avg_rate_per_night | total_tier_revenue
+-----------------------------------+---------------------+-------------+------------+--------------------+-------------------
+Savannah Crest Abuja               | 1-2 Nights (Short)  | 2493        | 1.57       | 65191.54           | 257163750.00      
+Savannah Crest Abuja               | 3-5 Nights (Medium) | 1021        | 3.55       | 63535.75           | 231303750.00      
+Savannah Crest Bodija              | 1-2 Nights (Short)  | 2155        | 1.58       | 49624.13           | 168640000.00      
+Savannah Crest Bodija              | 3-5 Nights (Medium) | 914         | 3.53       | 51942.01           | 167219000.00      
+Savannah Crest Independence Layout | 1-2 Nights (Short)  | 2118        | 1.57       | 49694.52           | 164199000.00      
+Savannah Crest Independence Layout | 3-5 Nights (Medium) | 891         | 3.54       | 49961.84           | 158237000.00      
+Savannah Crest Kano Royal          | 1-2 Nights (Short)  | 2249        | 1.56       | 50042.69           | 173937000.00      
+Savannah Crest Kano Royal          | 3-5 Nights (Medium) | 1027        | 3.55       | 50074.00           | 181852000.00      
+Savannah Crest Port Harcourt       | 1-2 Nights (Short)  | 2100        | 1.57       | 49344.29           | 161399000.00      
+Savannah Crest Port Harcourt       | 3-5 Nights (Medium) | 918         | 3.52       | 49075.16           | 159376000.00      
+Savannah Crest Victoria Island     | 1-2 Nights (Short)  | 2224        | 1.59       | 60558.68           | 215451250.00      
+Savannah Crest Victoria Island     | 3-5 Nights (Medium) | 958         | 3.52       | 60660.23           | 204645000.00      

@@ -1,0 +1,22 @@
+=====================================================================
+SAMPLE QUERY RESULTS: Q10
+=====================================================================
+
+-- =============================================================================
+-- Q10: Date-Range Financial & Operational Report (December Peak Summary)
+-- =============================================================================
+-- Business Question:
+--   Generate a comprehensive December 2026 performance summary for all hotels:
+--   total room-nights occupied, gross revenue collected, average daily booking value,
+--   and count of cancellations vs completed stays.
+-- Expected Shape:
+--   One performance summary row per hotel for December 2026.
+
+hotel_id | hotel_name                         | city          | completed_bookings | cancelled_bookings | cancellation_rate_pct | total_room_nights_sold | total_gross_revenue | avg_booking_value
+---------+------------------------------------+---------------+--------------------+--------------------+-----------------------+------------------------+---------------------+------------------
+1        | Savannah Crest Abuja               | Abuja         | 0                  | 0                  | NULL                  | NULL                   | 0                   | NULL             
+2        | Savannah Crest Victoria Island     | Lagos         | 0                  | 0                  | NULL                  | NULL                   | 0                   | NULL             
+3        | Savannah Crest Port Harcourt       | Port Harcourt | 0                  | 0                  | NULL                  | NULL                   | 0                   | NULL             
+4        | Savannah Crest Kano Royal          | Kano          | 0                  | 0                  | NULL                  | NULL                   | 0                   | NULL             
+5        | Savannah Crest Independence Layout | Enugu         | 0                  | 0                  | NULL                  | NULL                   | 0                   | NULL             
+6        | Savannah Crest Bodija              | Ibadan        | 0                  | 0                  | NULL                  | NULL                   | 0                   | NULL             

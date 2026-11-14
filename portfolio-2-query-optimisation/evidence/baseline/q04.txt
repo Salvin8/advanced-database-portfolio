@@ -1,0 +1,158 @@
+=====================================================================
+BASELINE EXECUTION PLAN: Q04
+Environment: PostgreSQL 16 (P1 Base Schema, Baseline Indexes Only)
+=====================================================================
+
+-- =============================================================================
+-- Q04: Window Function (Hotel Performance Ranking by Quarterly Revenue)
+-- =============================================================================
+-- Business Question:
+--   Rank all 6 hotel properties by quarter for the year 2026 based on their total
+--   completed revenue, assigning a dense rank (1 to 6) per quarter.
+-- Expected Shape:
+--   Quarterly hotel rankings (quarter, rank, hotel_name, revenue, room_nights_sold).
+
+--- QUERY SQL ---
+WITH quarterly_metrics AS (
+    SELECT 
+        h.name AS hotel_name,
+        EXTRACT(QUARTER FROM b.booking_date) AS booking_quarter,
+        SUM(p.amount) AS total_revenue,
+        COUNT(DISTINCT br.booking_room_id) AS total_room_stays
+    FROM hotel h
+    JOIN booking b ON h.hotel_id = b.hotel_id
+    JOIN booking_room br ON b.booking_id = br.booking_id
+    JOIN payment p ON b.booking_id = p.booking_id
+    WHERE b.booking_date >= '2026-01-01' AND b.booking_date < '2027-01-01'
+      AND p.payment_status = 'completed'
+      AND b.status = 'checked_out'
+    GROUP BY h.name, EXTRACT(QUARTER FROM b.booking_date)
+)
+SELECT 
+    booking_quarter,
+    DENSE_RANK() OVER (
+        PARTITION BY booking_quarter 
+        ORDER BY total_revenue DESC
+    ) AS revenue_rank,
+    hotel_name,
+    total_revenue,
+    total_room_stays
+FROM quarterly_metrics
+ORDER BY booking_quarter, revenue_rank;
+
+--- EXPLAIN (ANALYZE, BUFFERS) ---
+Incremental Sort  (cost=27042.40..27947.39 rows=14292 width=107) (actual time=1248.716..1263.716 rows=17 loops=1)
+  Output: quarterly_metrics.booking_quarter, (dense_rank() OVER (?)), quarterly_metrics.hotel_name, quarterly_metrics.total_revenue, quarterly_metrics.total_room_stays
+  Sort Key: quarterly_metrics.booking_quarter, (dense_rank() OVER (?))
+  Presorted Key: quarterly_metrics.booking_quarter
+  Full-sort Groups: 1  Sort Method: quicksort  Average Memory: 26kB  Peak Memory: 26kB
+  Buffers: shared hit=70396 read=8774
+  ->  WindowAgg  (cost=27038.77..27324.61 rows=14292 width=107) (actual time=1248.327..1263.361 rows=17 loops=1)
+        Output: quarterly_metrics.booking_quarter, dense_rank() OVER (?), quarterly_metrics.hotel_name, quarterly_metrics.total_revenue, quarterly_metrics.total_room_stays
+        Buffers: shared hit=70393 read=8774
+        ->  Sort  (cost=27038.77..27074.50 rows=14292 width=99) (actual time=1248.281..1263.281 rows=17 loops=1)
+              Output: quarterly_metrics.booking_quarter, quarterly_metrics.total_revenue, quarterly_metrics.hotel_name, quarterly_metrics.total_room_stays
+              Sort Key: quarterly_metrics.booking_quarter, quarterly_metrics.total_revenue DESC
+              Sort Method: quicksort  Memory: 26kB
+              Buffers: shared hit=70393 read=8774
+              ->  Subquery Scan on quarterly_metrics  (cost=23557.70..26052.41 rows=14292 width=99) (actual time=1181.459..1263.162 rows=17 loops=1)
+                    Output: quarterly_metrics.booking_quarter, quarterly_metrics.total_revenue, quarterly_metrics.hotel_name, quarterly_metrics.total_room_stays
+                    Buffers: shared hit=70393 read=8774
+                    ->  GroupAggregate  (cost=23557.70..25909.49 rows=14292 width=99) (actual time=1181.457..1261.534 rows=17 loops=1)
+                          Output: h.name, (EXTRACT(quarter FROM b.booking_date)), sum(p.amount), count(DISTINCT br.booking_room_id)
+                          Group Key: h.name, (EXTRACT(quarter FROM b.booking_date))
+                          Buffers: shared hit=70393 read=8774
+                          ->  Gather Merge  (cost=23557.70..25526.10 rows=16901 width=69) (actual time=1175.175..1235.291 rows=16778 loops=1)
+                                Output: h.name, (EXTRACT(quarter FROM b.booking_date)), p.amount, br.booking_room_id
+                                Workers Planned: 2
+                                Workers Launched: 2
+                                Buffers: shared hit=70393 read=8774
+                                ->  Sort  (cost=22557.68..22575.28 rows=7042 width=69) (actual time=983.802..984.760 rows=5593 loops=3)
+                                      Output: h.name, (EXTRACT(quarter FROM b.booking_date)), p.amount, br.booking_room_id
+                                      Sort Key: h.name, (EXTRACT(quarter FROM b.booking_date)), br.booking_room_id
+                                      Sort Method: quicksort  Memory: 322kB
+                                      Buffers: shared hit=70393 read=8774
+                                      Worker 0:  actual time=994.737..996.498 rows=10604 loops=1
+                                        Sort Method: quicksort  Memory: 1109kB
+                                        Buffers: shared hit=44651 read=3693
+                                      Worker 1:  actual time=886.545..887.182 rows=2896 loops=1
+                                        Sort Method: quicksort  Memory: 294kB
+                                        Buffers: shared hit=12033 read=1474
+                                      ->  Hash Join  (cost=10429.25..22107.63 rows=7042 width=69) (actual time=801.576..912.695 rows=5593 loops=3)
+                                            Output: h.name, EXTRACT(quarter FROM b.booking_date), p.amount, br.booking_room_id
+                                            Inner Unique: true
+                                            Hash Cond: (b.hotel_id = h.hotel_id)
+                                            Buffers: shared hit=70343 read=8774
+                                            Worker 0:  actual time=644.701..843.215 rows=10604 loops=1
+                                              Buffers: shared hit=44626 read=3693
+                                            Worker 1:  actual time=790.274..861.806 rows=2896 loops=1
+                                              Buffers: shared hit=12008 read=1474
+                                            ->  Nested Loop  (cost=10428.11..22057.35 rows=7042 width=22) (actual time=800.345..900.050 rows=5593 loops=3)
+                                                  Output: b.booking_date, b.hotel_id, br.booking_room_id, p.amount
+                                                  Join Filter: (b.booking_id = p.booking_id)
+                                                  Buffers: shared hit=70244 read=8774
+                                                  Worker 0:  actual time=641.845..815.991 rows=10604 loops=1
+                                                    Buffers: shared hit=44577 read=3693
+                                                  Worker 1:  actual time=789.506..855.570 rows=2896 loops=1
+                                                    Buffers: shared hit=11959 read=1474
+                                                  ->  Parallel Hash Join  (cost=10427.69..18255.25 rows=7320 width=24) (actual time=800.227..828.983 rows=5593 loops=3)
+                                                        Output: b.booking_date, b.hotel_id, b.booking_id, br.booking_room_id, br.booking_id
+                                                        Inner Unique: true
+                                                        Hash Cond: (br.booking_id = b.booking_id)
+                                                        Buffers: shared hit=3130 read=8774
+                                                        Worker 0:  actual time=641.680..715.366 rows=10604 loops=1
+                                                          Buffers: shared hit=2160 read=3693
+                                                        Worker 1:  actual time=789.391..795.230 rows=2896 loops=1
+                                                          Buffers: shared hit=374 read=1474
+                                                        ->  Parallel Seq Scan on public.booking_room br  (cost=0.00..7282.90 rows=207490 width=8) (actual time=0.764..583.018 rows=166667 loops=3)
+                                                              Output: br.booking_room_id, br.booking_id, br.room_id, br.check_in_date, br.check_out_date, br.stay, br.rate_per_night, br.num_guests, br.status
+                                                              Buffers: shared hit=1313 read=3895
+                                                              Worker 0:  actual time=0.147..417.398 rows=394173 loops=1
+                                                                Buffers: shared hit=1202 read=2885
+                                                              Worker 1:  actual time=0.111..658.198 rows=77891 loops=1
+                                                                Buffers: shared hit=37 read=766
+                                                        ->  Parallel Hash  (cost=10335.96..10335.96 rows=7338 width=16) (actual time=136.179..136.181 rows=5593 loops=3)
+                                                              Output: b.booking_date, b.hotel_id, b.booking_id
+                                                              Buckets: 32768  Batches: 1  Memory Usage: 1088kB
+                                                              Buffers: shared hit=1817 read=4879
+                                                              Worker 0:  actual time=76.759..76.761 rows=5395 loops=1
+                                                                Buffers: shared hit=958 read=808
+                                                              Worker 1:  actual time=78.034..78.036 rows=6956 loops=1
+                                                                Buffers: shared hit=337 read=708
+                                                              ->  Parallel Seq Scan on public.booking b  (cost=0.00..10335.96 rows=7338 width=16) (actual time=123.527..130.611 rows=5593 loops=3)
+                                                                    Output: b.booking_date, b.hotel_id, b.booking_id
+                                                                    Filter: ((b.booking_date >= '2026-01-01 00:00:00+00'::timestamp with time zone) AND (b.booking_date < '2027-01-01 00:00:00+00'::timestamp with time zone) AND ((b.status)::text = 'checked_out'::text))
+                                                                    Rows Removed by Filter: 161074
+                                                                    Buffers: shared hit=1817 read=4879
+                                                                    Worker 0:  actual time=59.868..72.717 rows=5395 loops=1
+                                                                      Buffers: shared hit=958 read=808
+                                                                    Worker 1:  actual time=64.945..69.048 rows=6956 loops=1
+                                                                      Buffers: shared hit=337 read=708
+                                                  ->  Index Scan using idx_payment_booking on public.payment p  (cost=0.42..0.51 rows=1 width=10) (actual time=0.011..0.011 rows=1 loops=16778)
+                                                        Output: p.payment_id, p.booking_id, p.amount, p.payment_method, p.payment_status, p.transaction_ref, p.payment_date, p.created_at
+                                                        Index Cond: (p.booking_id = br.booking_id)
+                                                        Filter: ((p.payment_status)::text = 'completed'::text)
+                                                        Buffers: shared hit=67114
+                                                        Worker 0:  actual time=0.008..0.008 rows=1 loops=10604
+                                                          Buffers: shared hit=42417
+                                                        Worker 1:  actual time=0.020..0.020 rows=1 loops=2896
+                                                          Buffers: shared hit=11585
+                                            ->  Hash  (cost=1.06..1.06 rows=6 width=31) (actual time=0.064..0.065 rows=6 loops=3)
+                                                  Output: h.name, h.hotel_id
+                                                  Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                                                  Buffers: shared hit=3
+                                                  Worker 0:  actual time=0.067..0.068 rows=6 loops=1
+                                                    Buffers: shared hit=1
+                                                  Worker 1:  actual time=0.074..0.075 rows=6 loops=1
+                                                    Buffers: shared hit=1
+                                                  ->  Seq Scan on public.hotel h  (cost=0.00..1.06 rows=6 width=31) (actual time=0.037..0.039 rows=6 loops=3)
+                                                        Output: h.name, h.hotel_id
+                                                        Buffers: shared hit=3
+                                                        Worker 0:  actual time=0.044..0.046 rows=6 loops=1
+                                                          Buffers: shared hit=1
+                                                        Worker 1:  actual time=0.051..0.053 rows=6 loops=1
+                                                          Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=73
+Planning Time: 65.825 ms
+Execution Time: 1266.470 ms

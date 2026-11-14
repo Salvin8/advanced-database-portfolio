@@ -1,0 +1,134 @@
+=====================================================================
+OPTIMISED EXECUTION PLAN: Q05
+Environment: PostgreSQL 16 (Targeted Indexes & Windowing Applied)
+=====================================================================
+
+-- =============================================================================
+-- Q05: Common Table Expression (Length-of-Stay Segmentation & Yield Analysis)
+-- =============================================================================
+-- Business Question:
+--   Segment all completed stays in 2026 into length-of-stay duration tiers:
+--   '1-2 Nights' (Short/Business), '3-5 Nights' (Medium/Leisure), '6+ Nights' (Extended),
+--   evaluating the total revenue contribution, average nightly rate, and total volume per tier.
+-- Expected Shape:
+--   One summary row per hotel and duration tier.
+
+--- QUERY SQL ---
+WITH stay_segments AS (
+    SELECT 
+        b.hotel_id,
+        h.name AS hotel_name,
+        (br.check_out_date - br.check_in_date) AS stay_length,
+        CASE 
+            WHEN (br.check_out_date - br.check_in_date) <= 2 THEN '1-2 Nights (Short)'
+            WHEN (br.check_out_date - br.check_in_date) <= 5 THEN '3-5 Nights (Medium)'
+            ELSE '6+ Nights (Extended)'
+        END AS stay_tier,
+        br.rate_per_night,
+        (br.rate_per_night * (br.check_out_date - br.check_in_date)) AS stay_revenue
+    FROM booking b
+    JOIN hotel h ON b.hotel_id = h.hotel_id
+    JOIN booking_room br ON b.booking_id = br.booking_id
+    WHERE b.status = 'checked_out'
+      AND br.check_in_date >= '2026-01-01' 
+      AND br.check_in_date < '2027-01-01'
+)
+SELECT 
+    hotel_name,
+    stay_tier,
+    COUNT(*) AS total_stays,
+    ROUND(AVG(stay_length), 2) AS avg_nights,
+    ROUND(AVG(rate_per_night), 2) AS avg_rate_per_night,
+    SUM(stay_revenue) AS total_tier_revenue
+FROM stay_segments
+GROUP BY hotel_name, stay_tier
+ORDER BY hotel_name, stay_tier;
+
+--- EXPLAIN (ANALYZE, BUFFERS) ---
+Finalize GroupAggregate  (cost=17432.69..20618.17 rows=19048 width=163) (actual time=196.847..232.048 rows=12 loops=1)
+  Output: h.name, (CASE WHEN ((br.check_out_date - br.check_in_date) <= 2) THEN '1-2 Nights (Short)'::text WHEN ((br.check_out_date - br.check_in_date) <= 5) THEN '3-5 Nights (Medium)'::text ELSE '6+ Nights (Extended)'::text END), count(*), round(avg((br.check_out_date - br.check_in_date)), 2), round(avg(br.rate_per_night), 2), sum((br.rate_per_night * ((br.check_out_date - br.check_in_date))::numeric))
+  Group Key: h.name, (CASE WHEN ((br.check_out_date - br.check_in_date) <= 2) THEN '1-2 Nights (Short)'::text WHEN ((br.check_out_date - br.check_in_date) <= 5) THEN '3-5 Nights (Medium)'::text ELSE '6+ Nights (Extended)'::text END)
+  Buffers: shared hit=7262
+  ->  Gather Merge  (cost=17432.69..19681.63 rows=15874 width=163) (actual time=195.991..231.748 rows=36 loops=1)
+        Output: h.name, (CASE WHEN ((br.check_out_date - br.check_in_date) <= 2) THEN '1-2 Nights (Short)'::text WHEN ((br.check_out_date - br.check_in_date) <= 5) THEN '3-5 Nights (Medium)'::text ELSE '6+ Nights (Extended)'::text END), (PARTIAL count(*)), (PARTIAL avg((br.check_out_date - br.check_in_date))), (PARTIAL avg(br.rate_per_night)), (PARTIAL sum((br.rate_per_night * ((br.check_out_date - br.check_in_date))::numeric)))
+        Workers Planned: 2
+        Workers Launched: 2
+        Buffers: shared hit=7262
+        ->  Partial GroupAggregate  (cost=16432.67..16849.36 rows=7937 width=163) (actual time=146.010..159.486 rows=12 loops=3)
+              Output: h.name, (CASE WHEN ((br.check_out_date - br.check_in_date) <= 2) THEN '1-2 Nights (Short)'::text WHEN ((br.check_out_date - br.check_in_date) <= 5) THEN '3-5 Nights (Medium)'::text ELSE '6+ Nights (Extended)'::text END), PARTIAL count(*), PARTIAL avg((br.check_out_date - br.check_in_date)), PARTIAL avg(br.rate_per_night), PARTIAL sum((br.rate_per_night * ((br.check_out_date - br.check_in_date))::numeric))
+              Group Key: h.name, (CASE WHEN ((br.check_out_date - br.check_in_date) <= 2) THEN '1-2 Nights (Short)'::text WHEN ((br.check_out_date - br.check_in_date) <= 5) THEN '3-5 Nights (Medium)'::text ELSE '6+ Nights (Extended)'::text END)
+              Buffers: shared hit=7262
+              Worker 0:  actual time=128.387..135.278 rows=12 loops=1
+                Buffers: shared hit=2032
+              Worker 1:  actual time=123.162..130.144 rows=12 loops=1
+                Buffers: shared hit=1822
+              ->  Sort  (cost=16432.67..16452.51 rows=7937 width=73) (actual time=144.994..145.693 rows=6356 loops=3)
+                    Output: h.name, (CASE WHEN ((br.check_out_date - br.check_in_date) <= 2) THEN '1-2 Nights (Short)'::text WHEN ((br.check_out_date - br.check_in_date) <= 5) THEN '3-5 Nights (Medium)'::text ELSE '6+ Nights (Extended)'::text END), br.check_out_date, br.check_in_date, br.rate_per_night
+                    Sort Key: h.name, (CASE WHEN ((br.check_out_date - br.check_in_date) <= 2) THEN '1-2 Nights (Short)'::text WHEN ((br.check_out_date - br.check_in_date) <= 5) THEN '3-5 Nights (Medium)'::text ELSE '6+ Nights (Extended)'::text END)
+                    Sort Method: quicksort  Memory: 707kB
+                    Buffers: shared hit=7262
+                    Worker 0:  actual time=127.414..127.903 rows=6200 loops=1
+                      Sort Method: quicksort  Memory: 738kB
+                      Buffers: shared hit=2032
+                    Worker 1:  actual time=122.026..122.753 rows=6990 loops=1
+                      Sort Method: quicksort  Memory: 806kB
+                      Buffers: shared hit=1822
+                    ->  Hash Join  (cost=5784.60..15918.57 rows=7937 width=73) (actual time=107.910..135.193 rows=6356 loops=3)
+                          Output: h.name, CASE WHEN ((br.check_out_date - br.check_in_date) <= 2) THEN '1-2 Nights (Short)'::text WHEN ((br.check_out_date - br.check_in_date) <= 5) THEN '3-5 Nights (Medium)'::text ELSE '6+ Nights (Extended)'::text END, br.check_out_date, br.check_in_date, br.rate_per_night
+                          Inner Unique: true
+                          Hash Cond: (b.hotel_id = h.hotel_id)
+                          Buffers: shared hit=7244
+                          Worker 0:  actual time=90.559..117.293 rows=6200 loops=1
+                            Buffers: shared hit=2023
+                          Worker 1:  actual time=84.183..111.341 rows=6990 loops=1
+                            Buffers: shared hit=1813
+                          ->  Parallel Hash Join  (cost=5783.47..15802.51 rows=7937 width=18) (actual time=107.060..128.490 rows=6356 loops=3)
+                                Output: b.hotel_id, br.check_out_date, br.check_in_date, br.rate_per_night
+                                Hash Cond: (b.booking_id = br.booking_id)
+                                Buffers: shared hit=7211
+                                Worker 0:  actual time=90.184..110.510 rows=6200 loops=1
+                                  Buffers: shared hit=2007
+                                Worker 1:  actual time=82.372..103.591 rows=6990 loops=1
+                                  Buffers: shared hit=1797
+                                ->  Parallel Seq Scan on public.booking b  (cost=0.00..9300.17 rows=182882 width=8) (actual time=0.024..71.870 rows=146517 loops=3)
+                                      Output: b.booking_id, b.guest_id, b.hotel_id, b.booking_ref, b.status, b.booking_date, b.total_amount, b.notes, b.created_at, b.updated_at
+                                      Filter: ((b.status)::text = 'checked_out'::text)
+                                      Rows Removed by Filter: 20150
+                                      Buffers: shared hit=6696
+                                      Worker 0:  actual time=0.012..65.983 rows=130520 loops=1
+                                        Buffers: shared hit=2007
+                                      Worker 1:  actual time=0.049..64.369 rows=118395 loops=1
+                                        Buffers: shared hit=1797
+                                ->  Parallel Hash  (cost=5670.46..5670.46 rows=9041 width=18) (actual time=8.646..8.647 rows=7221 loops=3)
+                                      Output: br.check_out_date, br.check_in_date, br.rate_per_night, br.booking_id
+                                      Buckets: 32768  Batches: 1  Memory Usage: 1472kB
+                                      Buffers: shared hit=515
+                                      Worker 0:  actual time=0.037..0.038 rows=0 loops=1
+                                      Worker 1:  actual time=0.055..0.056 rows=0 loops=1
+                                      ->  Parallel Bitmap Heap Scan on public.booking_room br  (cost=326.84..5670.46 rows=9041 width=18) (actual time=4.087..12.956 rows=21663 loops=1)
+                                            Output: br.check_out_date, br.check_in_date, br.rate_per_night, br.booking_id
+                                            Recheck Cond: ((br.check_in_date >= '2026-01-01'::date) AND (br.check_in_date < '2027-01-01'::date))
+                                            Heap Blocks: exact=487
+                                            Buffers: shared hit=515
+                                            ->  Bitmap Index Scan on idx_booking_room_dates  (cost=0.00..321.41 rows=21699 width=0) (actual time=3.964..3.965 rows=21663 loops=1)
+                                                  Index Cond: ((br.check_in_date >= '2026-01-01'::date) AND (br.check_in_date < '2027-01-01'::date))
+                                                  Buffers: shared hit=28
+                          ->  Hash  (cost=1.06..1.06 rows=6 width=31) (actual time=0.688..0.689 rows=6 loops=3)
+                                Output: h.name, h.hotel_id
+                                Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                                Buffers: shared hit=3
+                                Worker 0:  actual time=0.101..0.102 rows=6 loops=1
+                                  Buffers: shared hit=1
+                                Worker 1:  actual time=1.611..1.612 rows=6 loops=1
+                                  Buffers: shared hit=1
+                                ->  Seq Scan on public.hotel h  (cost=0.00..1.06 rows=6 width=31) (actual time=0.647..0.650 rows=6 loops=3)
+                                      Output: h.name, h.hotel_id
+                                      Buffers: shared hit=3
+                                      Worker 0:  actual time=0.062..0.064 rows=6 loops=1
+                                        Buffers: shared hit=1
+                                      Worker 1:  actual time=1.568..1.571 rows=6 loops=1
+                                        Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=48
+Planning Time: 4.381 ms
+Execution Time: 233.568 ms

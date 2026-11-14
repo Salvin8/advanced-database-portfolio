@@ -1,0 +1,15 @@
+=====================================================================
+SAMPLE QUERY RESULTS: Q01
+=====================================================================
+
+-- =============================================================================
+-- Q01: Multi-Table Operational Join (Front Desk Arrival & Check-In Roster)
+-- =============================================================================
+-- Business Question:
+--   Retrieve the front desk arrival roster for Savannah Crest Abuja (hotel_id = 1)
+--   for check-in on '2026-12-20'. Returns guest names, contact details, room number,
+--   room category, stay dates, nightly tariff, total booking value, and payment status.
+-- Expected Shape:
+--   Tabular roster of individual room check-ins ordered by room number.
+
+No rows returned.

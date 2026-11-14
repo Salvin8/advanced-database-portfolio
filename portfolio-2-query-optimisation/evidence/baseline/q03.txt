@@ -1,0 +1,144 @@
+=====================================================================
+BASELINE EXECUTION PLAN: Q03
+Environment: PostgreSQL 16 (P1 Base Schema, Baseline Indexes Only)
+=====================================================================
+
+-- =============================================================================
+-- Q03: Window Function (Monthly Revenue Trend, Running Total & MoM Growth)
+-- =============================================================================
+-- Business Question:
+--   For the year 2026, compute monthly realized revenue per hotel property, alongside
+--   a running cumulative year-to-date total, and the percentage growth compared to the
+--   previous month (using LAG).
+-- Expected Shape:
+--   One row per hotel and month (hotel_id, hotel_name, month, monthly_revenue,
+--   ytd_running_total, mom_growth_pct).
+
+--- QUERY SQL ---
+WITH monthly_sales AS (
+    SELECT 
+        h.hotel_id,
+        h.name AS hotel_name,
+        DATE_TRUNC('month', b.booking_date)::DATE AS sales_month,
+        SUM(p.amount) AS monthly_revenue
+    FROM hotel h
+    JOIN booking b ON h.hotel_id = b.hotel_id
+    JOIN payment p ON b.booking_id = p.booking_id
+    WHERE b.booking_date >= '2026-01-01'
+      AND b.booking_date < '2027-01-01'
+      AND p.payment_status = 'completed'
+    GROUP BY h.hotel_id, h.name, DATE_TRUNC('month', b.booking_date)
+)
+SELECT 
+    hotel_id,
+    hotel_name,
+    sales_month,
+    monthly_revenue,
+    SUM(monthly_revenue) OVER (
+        PARTITION BY hotel_id 
+        ORDER BY sales_month
+    ) AS ytd_running_total,
+    ROUND(
+        100.0 * (monthly_revenue - LAG(monthly_revenue) OVER (PARTITION BY hotel_id ORDER BY sales_month)) 
+        / NULLIF(LAG(monthly_revenue) OVER (PARTITION BY hotel_id ORDER BY sales_month), 0),
+        2
+    ) AS mom_growth_pct
+FROM monthly_sales
+ORDER BY hotel_id, sales_month;
+
+--- EXPLAIN (ANALYZE, BUFFERS) ---
+WindowAgg  (cost=24175.96..24676.39 rows=14298 width=131) (actual time=1613.931..1623.679 rows=45 loops=1)
+  Output: monthly_sales.hotel_id, monthly_sales.hotel_name, monthly_sales.sales_month, monthly_sales.monthly_revenue, sum(monthly_sales.monthly_revenue) OVER (?), round(((100.0 * (monthly_sales.monthly_revenue - lag(monthly_sales.monthly_revenue) OVER (?))) / NULLIF(lag(monthly_sales.monthly_revenue) OVER (?), '0'::numeric)), 2)
+  Buffers: shared hit=3489 read=9819
+  ->  Sort  (cost=24175.96..24211.70 rows=14298 width=67) (actual time=1612.017..1621.576 rows=45 loops=1)
+        Output: monthly_sales.hotel_id, monthly_sales.sales_month, monthly_sales.hotel_name, monthly_sales.monthly_revenue
+        Sort Key: monthly_sales.hotel_id, monthly_sales.sales_month
+        Sort Method: quicksort  Memory: 28kB
+        Buffers: shared hit=3489 read=9819
+        ->  Subquery Scan on monthly_sales  (cost=22760.21..23189.15 rows=14298 width=67) (actual time=1611.711..1621.389 rows=45 loops=1)
+              Output: monthly_sales.hotel_id, monthly_sales.sales_month, monthly_sales.hotel_name, monthly_sales.monthly_revenue
+              Buffers: shared hit=3486 read=9819
+              ->  Finalize HashAggregate  (cost=22760.21..23046.17 rows=14298 width=75) (actual time=1611.708..1621.374 rows=45 loops=1)
+                    Output: h.hotel_id, h.name, ((date_trunc('month'::text, b.booking_date)))::date, sum(p.amount), (date_trunc('month'::text, b.booking_date))
+                    Group Key: h.hotel_id, (date_trunc('month'::text, b.booking_date))
+                    Batches: 1  Memory Usage: 433kB
+                    Buffers: shared hit=3486 read=9819
+                    ->  Gather  (cost=20872.45..22599.55 rows=16066 width=79) (actual time=1608.024..1618.163 rows=132 loops=1)
+                          Output: h.hotel_id, (date_trunc('month'::text, b.booking_date)), h.name, b.booking_date, (PARTIAL sum(p.amount))
+                          Workers Planned: 2
+                          Workers Launched: 2
+                          Buffers: shared hit=3486 read=9819
+                          ->  Partial HashAggregate  (cost=19872.45..19992.95 rows=8033 width=79) (actual time=1198.107..1198.365 rows=44 loops=3)
+                                Output: h.hotel_id, (date_trunc('month'::text, b.booking_date)), h.name, b.booking_date, PARTIAL sum(p.amount)
+                                Group Key: h.hotel_id, date_trunc('month'::text, b.booking_date)
+                                Batches: 1  Memory Usage: 433kB
+                                Buffers: shared hit=3486 read=9819
+                                Worker 0:  actual time=984.573..984.693 rows=44 loops=1
+                                  Batches: 1  Memory Usage: 433kB
+                                  Buffers: shared hit=1233 read=2143
+                                Worker 1:  actual time=1008.205..1008.297 rows=44 loops=1
+                                  Batches: 1  Memory Usage: 433kB
+                                  Buffers: shared hit=813 read=3460
+                                ->  Hash Join  (cost=9921.48..19812.20 rows=8033 width=53) (actual time=1153.845..1191.396 rows=6102 loops=3)
+                                      Output: h.hotel_id, date_trunc('month'::text, b.booking_date), h.name, b.booking_date, p.amount
+                                      Inner Unique: true
+                                      Hash Cond: (b.hotel_id = h.hotel_id)
+                                      Buffers: shared hit=3486 read=9819
+                                      Worker 0:  actual time=940.333..977.669 rows=7155 loops=1
+                                        Buffers: shared hit=1233 read=2143
+                                      Worker 1:  actual time=963.910..1000.285 rows=5437 loops=1
+                                        Buffers: shared hit=813 read=3460
+                                      ->  Parallel Hash Join  (cost=9920.34..19755.00 rows=8033 width=18) (actual time=1151.077..1178.892 rows=6102 loops=3)
+                                            Output: b.booking_date, b.hotel_id, p.amount
+                                            Inner Unique: true
+                                            Hash Cond: (p.booking_id = b.booking_id)
+                                            Buffers: shared hit=3477 read=9819
+                                            Worker 0:  actual time=936.527..959.704 rows=7155 loops=1
+                                              Buffers: shared hit=1229 read=2143
+                                            Worker 1:  actual time=961.951..992.253 rows=5437 loops=1
+                                              Buffers: shared hit=809 read=3460
+                                            ->  Parallel Seq Scan on public.payment p  (cost=0.00..9309.39 rows=200104 width=10) (actual time=0.106..361.312 rows=159890 loops=3)
+                                                  Output: p.payment_id, p.booking_id, p.amount, p.payment_method, p.payment_status, p.transaction_ref, p.payment_date, p.created_at
+                                                  Filter: ((p.payment_status)::text = 'completed'::text)
+                                                  Rows Removed by Filter: 13511
+                                                  Buffers: shared hit=1852 read=4748
+                                                  Worker 0:  actual time=0.109..249.517 rows=151660 loops=1
+                                                    Buffers: shared hit=707 read=1388
+                                                  Worker 1:  actual time=0.106..281.454 rows=159671 loops=1
+                                                    Buffers: shared hit=542 read=1652
+                                            ->  Parallel Hash  (cost=9815.97..9815.97 rows=8350 width=16) (actual time=437.320..437.321 rows=6353 loops=3)
+                                                  Output: b.booking_date, b.hotel_id, b.booking_id
+                                                  Buckets: 32768  Batches: 1  Memory Usage: 1184kB
+                                                  Buffers: shared hit=1625 read=5071
+                                                  Worker 0:  actual time=232.116..232.116 rows=6435 loops=1
+                                                    Buffers: shared hit=522 read=755
+                                                  Worker 1:  actual time=255.693..255.694 rows=1193 loops=1
+                                                    Buffers: shared hit=267 read=1808
+                                                  ->  Parallel Seq Scan on public.booking b  (cost=0.00..9815.97 rows=8350 width=16) (actual time=396.791..419.706 rows=6353 loops=3)
+                                                        Output: b.booking_date, b.hotel_id, b.booking_id
+                                                        Filter: ((b.booking_date >= '2026-01-01 00:00:00+00'::timestamp with time zone) AND (b.booking_date < '2027-01-01 00:00:00+00'::timestamp with time zone))
+                                                        Rows Removed by Filter: 160314
+                                                        Buffers: shared hit=1625 read=5071
+                                                        Worker 0:  actual time=191.755..219.230 rows=6435 loops=1
+                                                          Buffers: shared hit=522 read=755
+                                                        Worker 1:  actual time=215.033..240.953 rows=1193 loops=1
+                                                          Buffers: shared hit=267 read=1808
+                                      ->  Hash  (cost=1.06..1.06 rows=6 width=31) (actual time=0.079..0.080 rows=6 loops=3)
+                                            Output: h.hotel_id, h.name
+                                            Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                                            Buffers: shared hit=3
+                                            Worker 0:  actual time=0.076..0.077 rows=6 loops=1
+                                              Buffers: shared hit=1
+                                            Worker 1:  actual time=0.109..0.109 rows=6 loops=1
+                                              Buffers: shared hit=1
+                                            ->  Seq Scan on public.hotel h  (cost=0.00..1.06 rows=6 width=31) (actual time=0.047..0.050 rows=6 loops=3)
+                                                  Output: h.hotel_id, h.name
+                                                  Buffers: shared hit=3
+                                                  Worker 0:  actual time=0.054..0.056 rows=6 loops=1
+                                                    Buffers: shared hit=1
+                                                  Worker 1:  actual time=0.070..0.073 rows=6 loops=1
+                                                    Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=59 read=1
+Planning Time: 86.134 ms
+Execution Time: 1663.924 ms

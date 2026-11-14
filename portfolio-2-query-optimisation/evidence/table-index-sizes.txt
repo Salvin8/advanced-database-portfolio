@@ -1,0 +1,59 @@
+=====================================================================
+DATABASE STORAGE FOOTPRINT: TABLES AND INDEXES
+=====================================================================
+
+Object Name                         | Type   |       Size |        Bytes
+------------------------------------------------------------------------
+room_status_history                 | Table  |      64 MB |   67,502,080
+booking                             | Table  |      52 MB |   54,853,632
+payment                             | Table  |      52 MB |   54,067,200
+idx_room_status_room                | Index  |      45 MB |   47,390,720
+booking_room                        | Table  |      41 MB |   42,663,936
+idx_booking_guest_status_covering   | Index  |      32 MB |   33,882,112
+check_in_out                        | Table  |      25 MB |   26,607,616
+room_status_history_pkey            | Index  |      19 MB |   19,783,680
+booking_booking_ref_key             | Index  |      17 MB |   18,210,816
+idx_payment_completed_booking       | Index  |      14 MB |   15,130,624
+payment_pkey                        | Index  |      11 MB |   11,706,368
+idx_payment_booking                 | Index  |      11 MB |   11,624,448
+booking_pkey                        | Index  |      11 MB |   11,272,192
+idx_booking_room_fk_booking         | Index  |      11 MB |   11,255,808
+booking_room_pkey                   | Index  |      11 MB |   11,255,808
+check_in_out_pkey                   | Index  |    9656 kB |    9,887,744
+idx_check_in_out_booking_room       | Index  |    9656 kB |    9,887,744
+check_in_out_booking_room_id_key    | Index  |    9656 kB |    9,887,744
+guest                               | Table  |    7296 kB |    7,471,104
+idx_booking_guest                   | Index  |    6136 kB |    6,283,264
+idx_booking_room_fk_room            | Index  |    4832 kB |    4,947,968
+idx_booking_room_dates              | Index  |    4632 kB |    4,743,168
+idx_booking_hotel_date              | Index  |    3776 kB |    3,866,624
+idx_booking_hotel                   | Index  |    3208 kB |    3,284,992
+idx_booking_status                  | Index  |    3192 kB |    3,268,608
+guest_email_key                     | Index  |    2984 kB |    3,055,616
+guest_pkey                          | Index  |    1112 kB |    1,138,688
+excl_no_overlapping_booking         | Index  |    1048 kB |    1,073,152
+idx_booking_room_active_dates       | Index  |     632 kB |      647,168
+idx_guest_nationality               | Index  |     360 kB |      368,640
+seasonal_rate                       | Table  |      72 kB |       73,728
+seasonal_rate_pkey                  | Index  |      40 kB |       40,960
+uq_room_number_per_hotel            | Index  |      32 kB |       32,768
+room_pkey                           | Index  |      32 kB |       32,768
+room                                | Table  |      32 kB |       32,768
+idx_booking_date_brin               | Index  |      24 kB |       24,576
+idx_staff_hotel                     | Index  |      16 kB |       16,384
+room_type_pkey                      | Index  |      16 kB |       16,384
+room_type_name_key                  | Index  |      16 kB |       16,384
+idx_room_room_type                  | Index  |      16 kB |       16,384
+staff_pkey                          | Index  |      16 kB |       16,384
+idx_room_hotel                      | Index  |      16 kB |       16,384
+hotel_pkey                          | Index  |      16 kB |       16,384
+staff_email_key                     | Index  |      16 kB |       16,384
+idx_seasonal_rate_hotel_type        | Index  |      16 kB |       16,384
+idx_audit_log_table_record          | Index  | 8192 bytes |        8,192
+staff                               | Table  | 8192 bytes |        8,192
+room_type                           | Table  | 8192 bytes |        8,192
+hotel                               | Table  | 8192 bytes |        8,192
+audit_log_pkey                      | Index  | 8192 bytes |        8,192
+idx_audit_log_time                  | Index  | 8192 bytes |        8,192
+audit_log                           | Table  |    0 bytes |            0
+------------------------------------------------------------------------

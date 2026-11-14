@@ -1,0 +1,78 @@
+=====================================================================
+OPTIMISED EXECUTION PLAN: Q08
+Environment: PostgreSQL 16 (Targeted Indexes & Windowing Applied)
+=====================================================================
+
+-- =============================================================================
+-- Q08: Room Availability Search (Vacant Rooms for Specific Period & Category)
+-- =============================================================================
+-- Business Question:
+--   Find all available 'Deluxe Room' units at Savannah Crest Abuja (hotel_id = 1)
+--   for a proposed stay during the Christmas festive week from '2026-12-24' to '2026-12-31'.
+--   A room is available if it has no overlapping active booking ('reserved' or 'checked_in').
+-- Expected Shape:
+--   List of free rooms (room_id, room_number, floor) ready for reservation.
+
+--- QUERY SQL ---
+SELECT 
+    r.room_id,
+    r.room_number,
+    r.floor,
+    rt.name AS room_type,
+    rt.base_capacity,
+    rt.max_capacity
+FROM room r
+JOIN room_type rt ON r.room_type_id = rt.room_type_id
+WHERE r.hotel_id = 1
+  AND r.is_active = true
+  AND rt.name = 'Deluxe Room'
+  AND NOT EXISTS (
+      SELECT 1 
+      FROM booking_room br
+      WHERE br.room_id = r.room_id
+        AND br.status IN ('reserved', 'checked_in')
+        AND br.stay && daterange('2026-12-24', '2026-12-31', '[)')
+  )
+ORDER BY r.floor, r.room_number;
+
+--- EXPLAIN (ANALYZE, BUFFERS) ---
+Sort  (cost=20.75..20.82 rows=25 width=29) (actual time=4.309..4.313 rows=30 loops=1)
+  Output: r.room_id, r.room_number, r.floor, rt.name, rt.base_capacity, rt.max_capacity
+  Sort Key: r.floor, r.room_number
+  Sort Method: quicksort  Memory: 26kB
+  Buffers: shared hit=37
+  ->  Nested Loop Anti Join  (cost=1.49..20.17 rows=25 width=29) (actual time=4.128..4.235 rows=30 loops=1)
+        Output: r.room_id, r.room_number, r.floor, rt.name, rt.base_capacity, rt.max_capacity
+        Join Filter: (br.room_id = r.room_id)
+        Buffers: shared hit=34
+        ->  Hash Join  (cost=1.21..11.50 rows=25 width=29) (actual time=0.076..0.116 rows=30 loops=1)
+              Output: r.room_id, r.room_number, r.floor, rt.name, rt.base_capacity, rt.max_capacity
+              Inner Unique: true
+              Hash Cond: (r.room_type_id = rt.room_type_id)
+              Buffers: shared hit=3
+              ->  Index Scan using idx_room_hotel on public.room r  (cost=0.15..9.90 rows=100 width=14) (actual time=0.021..0.051 rows=100 loops=1)
+                    Output: r.room_id, r.hotel_id, r.room_type_id, r.room_number, r.floor, r.is_active
+                    Index Cond: (r.hotel_id = 1)
+                    Filter: r.is_active
+                    Buffers: shared hit=2
+              ->  Hash  (cost=1.05..1.05 rows=1 width=23) (actual time=0.023..0.024 rows=1 loops=1)
+                    Output: rt.name, rt.base_capacity, rt.max_capacity, rt.room_type_id
+                    Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                    Buffers: shared hit=1
+                    ->  Seq Scan on public.room_type rt  (cost=0.00..1.05 rows=1 width=23) (actual time=0.009..0.010 rows=1 loops=1)
+                          Output: rt.name, rt.base_capacity, rt.max_capacity, rt.room_type_id
+                          Filter: ((rt.name)::text = 'Deluxe Room'::text)
+                          Rows Removed by Filter: 3
+                          Buffers: shared hit=1
+        ->  Materialize  (cost=0.28..8.30 rows=1 width=4) (actual time=0.135..0.135 rows=0 loops=30)
+              Output: br.room_id
+              Buffers: shared hit=31
+              ->  Index Only Scan using excl_no_overlapping_booking on public.booking_room br  (cost=0.28..8.29 rows=1 width=4) (actual time=4.044..4.044 rows=0 loops=1)
+                    Output: br.room_id
+                    Index Cond: (br.stay && '[2026-12-24,2026-12-31)'::daterange)
+                    Heap Fetches: 0
+                    Buffers: shared hit=31
+Planning:
+  Buffers: shared hit=55
+Planning Time: 1.289 ms
+Execution Time: 4.637 ms

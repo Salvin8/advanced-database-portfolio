@@ -1,0 +1,43 @@
+=====================================================================
+SAMPLE QUERY RESULTS: Q08
+=====================================================================
+
+-- =============================================================================
+-- Q08: Room Availability Search (Vacant Rooms for Specific Period & Category)
+-- =============================================================================
+-- Business Question:
+--   Find all available 'Deluxe Room' units at Savannah Crest Abuja (hotel_id = 1)
+--   for a proposed stay during the Christmas festive week from '2026-12-24' to '2026-12-31'.
+--   A room is available if it has no overlapping active booking ('reserved' or 'checked_in').
+-- Expected Shape:
+--   List of free rooms (room_id, room_number, floor) ready for reservation.
+
+room_id | room_number | floor | room_type   | base_capacity | max_capacity
+--------+-------------+-------+-------------+---------------+-------------
+51      | 311         | 3     | Deluxe Room | 2             | 2           
+52      | 312         | 3     | Deluxe Room | 2             | 2           
+53      | 313         | 3     | Deluxe Room | 2             | 2           
+54      | 314         | 3     | Deluxe Room | 2             | 2           
+55      | 315         | 3     | Deluxe Room | 2             | 2           
+56      | 316         | 3     | Deluxe Room | 2             | 2           
+57      | 317         | 3     | Deluxe Room | 2             | 2           
+58      | 318         | 3     | Deluxe Room | 2             | 2           
+59      | 319         | 3     | Deluxe Room | 2             | 2           
+60      | 320         | 3     | Deluxe Room | 2             | 2           
+61      | 401         | 4     | Deluxe Room | 2             | 2           
+62      | 402         | 4     | Deluxe Room | 2             | 2           
+63      | 403         | 4     | Deluxe Room | 2             | 2           
+64      | 404         | 4     | Deluxe Room | 2             | 2           
+65      | 405         | 4     | Deluxe Room | 2             | 2           
+66      | 406         | 4     | Deluxe Room | 2             | 2           
+67      | 407         | 4     | Deluxe Room | 2             | 2           
+68      | 408         | 4     | Deluxe Room | 2             | 2           
+69      | 409         | 4     | Deluxe Room | 2             | 2           
+70      | 410         | 4     | Deluxe Room | 2             | 2           
+71      | 411         | 4     | Deluxe Room | 2             | 2           
+72      | 412         | 4     | Deluxe Room | 2             | 2           
+73      | 413         | 4     | Deluxe Room | 2             | 2           
+74      | 414         | 4     | Deluxe Room | 2             | 2           
+75      | 415         | 4     | Deluxe Room | 2             | 2           
+
+(... truncated to first 25 rows ...)
