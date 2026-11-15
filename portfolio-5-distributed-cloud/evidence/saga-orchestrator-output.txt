@@ -1,6 +1,6 @@
 ================================================================================
 SAVANNAH CREST HOTELS - DISTRIBUTED SAGA PATTERN ORCHESTRATION
-Timestamp: 2026-11-15T10:04:53.510463
+Timestamp: 2026-11-15T10:15:09.008864
 ================================================================================
 ✓ Purged previous demonstration SAGA bookings for clean reproducibility.
 
@@ -8,56 +8,56 @@ Timestamp: 2026-11-15T10:04:53.510463
 SCENARIO 1: SUCCESSFUL DISTRIBUTED TRANSACTION (HAPPY PATH)
 ================================================================================
 
->>> INITIATING SAGA [ID: 5d4acbdc-1d2e-41e0-a5fc-ac54a6e3e6f5] <<<
+>>> INITIATING SAGA [ID: 7864c946-dec2-4553-945f-79f2178d2ca8] <<<
     Hotel: Savannah Crest Abuja | Room: 10 | Guest: 101 | Dates: 2026-12-10 to 2026-12-14
-    [InventoryService] Holding Room 10 (Hotel 1) for Saga 5d4acbdc...
-    [InventoryService] ✓ Room 10 held successfully (Booking ID: 500035)
-    [PaymentGateway] Charging ₦180,000.00 via card (Idempotency: idemp_df)...
-    [PaymentGateway] ✓ Payment approved! Transaction Ref: TXN-SUCCESS-idemp_df (Payment ID: 520213)
-    [InventoryService] Confirming reservation for Booking ID 500035...
-    [InventoryService] ✓ Booking ID 500035 status updated to CONFIRMED.
-    [NotificationService] Sending confirmation email to amina.bello101@mail.ng for SAGA-5D4ACBDC at Savannah Crest Abuja...
+    [InventoryService] Holding Room 10 (Hotel 1) for Saga 7864c946...
+    [InventoryService] ✓ Room 10 held successfully (Booking ID: 500041)
+    [PaymentGateway] Charging ₦180,000.00 via card (Idempotency: idemp_a5)...
+    [PaymentGateway] ✓ Payment approved! Transaction Ref: TXN-SUCCESS-idemp_a5 (Payment ID: 520219)
+    [InventoryService] Confirming reservation for Booking ID 500041...
+    [InventoryService] ✓ Booking ID 500041 status updated to CONFIRMED.
+    [NotificationService] Sending confirmation email to amina.bello101@mail.ng for SAGA-7864C946 at Savannah Crest Abuja...
     [NotificationService] ✓ Email and SMS alerts successfully dispatched.
     [Orchestrator] ✓ SAGA COMPLETED SUCCESSFULLY. All distributed services converged.
 
 Final State Scenario 1: {
-  "saga_id": "5d4acbdc-1d2e-41e0-a5fc-ac54a6e3e6f5",
+  "saga_id": "7864c946-dec2-4553-945f-79f2178d2ca8",
   "status": "SUCCESS",
-  "booking_id": 500035,
-  "payment_id": 520213,
+  "booking_id": 500041,
+  "payment_id": 520219,
   "compensation_executed": false,
-  "booking_ref": "SAGA-5D4ACBDC"
+  "booking_ref": "SAGA-7864C946"
 }
 
 ================================================================================
 SCENARIO 2: PAYMENT FAILURE TRIGGERING COMPENSATING ROLLBACK
 ================================================================================
 
->>> INITIATING SAGA [ID: 14851f77-d25a-454d-aa3e-2e482bb92ca0] <<<
+>>> INITIATING SAGA [ID: 819f6004-bc0e-4867-a894-0eaedfc210c7] <<<
     Hotel: Savannah Crest Victoria Island | Room: 115 | Guest: 102 | Dates: 2026-12-15 to 2026-12-18
-    [InventoryService] Holding Room 115 (Hotel 2) for Saga 14851f77...
-    [InventoryService] ✓ Room 115 held successfully (Booking ID: 500036)
-    [PaymentGateway] Charging ₦255,000.00 via card (Idempotency: idemp_51)...
+    [InventoryService] Holding Room 115 (Hotel 2) for Saga 819f6004...
+    [InventoryService] ✓ Room 115 held successfully (Booking ID: 500042)
+    [PaymentGateway] Charging ₦255,000.00 via card (Idempotency: idemp_8d)...
     [PaymentGateway] ✗ PAYMENT DECLINED: Insufficient funds / Card expired (Simulated Error)
 
     [Orchestrator] ✗ Step 2 (Payment) Failed: Payment Authorization Refused by Issuing Bank.
     [Orchestrator] ⚡ TRIGGERING BACKWARD COMPENSATING TRANSACTIONS...
-    [InventoryService] ⚠️ EXECUTING COMPENSATING ACTION: Releasing Booking ID 500036 (Payment Authorization Refused by Issuing Bank.)...
-    [InventoryService] ✓ Booking ID 500036 marked CANCELLED. Room returned to pool.
-    [Orchestrator] ✓ Saga 14851f77 rolled back cleanly. System consistency preserved.
+    [InventoryService] ⚠️ EXECUTING COMPENSATING ACTION: Releasing Booking ID 500042 (Payment Authorization Refused by Issuing Bank.)...
+    [InventoryService] ✓ Booking ID 500042 marked CANCELLED. Room returned to pool.
+    [Orchestrator] ✓ Saga 819f6004 rolled back cleanly. System consistency preserved.
 
 Final State Scenario 2: {
-  "saga_id": "14851f77-d25a-454d-aa3e-2e482bb92ca0",
+  "saga_id": "819f6004-bc0e-4867-a894-0eaedfc210c7",
   "status": "COMPENSATED_ABORT",
-  "booking_id": 500036,
+  "booking_id": 500042,
   "payment_id": null,
   "compensation_executed": true,
-  "booking_ref": "SAGA-14851F77"
+  "booking_ref": "SAGA-819F6004"
 }
 
 --- Verifying Post-Compensation Database State in PostgreSQL ---
-  Booking ID:     500036
-  Booking Ref:    SAGA-14851F77
+  Booking ID:     500042
+  Booking Ref:    SAGA-819F6004
   Booking Status: cancelled
   Room ID:        115
   Room Status:    cancelled
@@ -67,27 +67,27 @@ Final State Scenario 2: {
 SCENARIO 3: TRANSIENT TIMEOUT WITH IDEMPOTENT RETRY
 ================================================================================
 
->>> INITIATING SAGA [ID: e39d8b55-e866-4a6b-a69b-f55c93341cd3] <<<
+>>> INITIATING SAGA [ID: 147af5b0-d268-4dfd-8350-d03e278f2348] <<<
     Hotel: Savannah Crest Port Harcourt | Room: 220 | Guest: 103 | Dates: 2026-12-20 to 2026-12-24
-    [InventoryService] Holding Room 220 (Hotel 3) for Saga e39d8b55...
-    [InventoryService] ✓ Room 220 held successfully (Booking ID: 500037)
+    [InventoryService] Holding Room 220 (Hotel 3) for Saga 147af5b0...
+    [InventoryService] ✓ Room 220 held successfully (Booking ID: 500043)
     [Orchestrator] Simulating transient network timeout on first attempt...
     [Orchestrator] Retrying with exponential backoff and idempotency key...
-    [PaymentGateway] Charging ₦170,000.00 via bank_transfer (Idempotency: idemp_e7)...
-    [PaymentGateway] ✓ Payment approved! Transaction Ref: TXN-SUCCESS-idemp_e7 (Payment ID: 520215)
-    [InventoryService] Confirming reservation for Booking ID 500037...
-    [InventoryService] ✓ Booking ID 500037 status updated to CONFIRMED.
-    [NotificationService] Sending confirmation email to zainab.danladi103@mail.ng for SAGA-E39D8B55 at Savannah Crest Port Harcourt...
+    [PaymentGateway] Charging ₦170,000.00 via bank_transfer (Idempotency: idemp_25)...
+    [PaymentGateway] ✓ Payment approved! Transaction Ref: TXN-SUCCESS-idemp_25 (Payment ID: 520221)
+    [InventoryService] Confirming reservation for Booking ID 500043...
+    [InventoryService] ✓ Booking ID 500043 status updated to CONFIRMED.
+    [NotificationService] Sending confirmation email to zainab.danladi103@mail.ng for SAGA-147AF5B0 at Savannah Crest Port Harcourt...
     [NotificationService] ✓ Email and SMS alerts successfully dispatched.
     [Orchestrator] ✓ SAGA COMPLETED SUCCESSFULLY. All distributed services converged.
 
 Final State Scenario 3: {
-  "saga_id": "e39d8b55-e866-4a6b-a69b-f55c93341cd3",
+  "saga_id": "147af5b0-d268-4dfd-8350-d03e278f2348",
   "status": "SUCCESS",
-  "booking_id": 500037,
-  "payment_id": 520215,
+  "booking_id": 500043,
+  "payment_id": 520221,
   "compensation_executed": false,
-  "booking_ref": "SAGA-E39D8B55"
+  "booking_ref": "SAGA-147AF5B0"
 }
 
 ==================================================================

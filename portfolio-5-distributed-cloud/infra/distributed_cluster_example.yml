@@ -1,0 +1,167 @@
+# =============================================================================
+# distributed_cluster_example.yml
+# Savannah Crest Hotels - Multi-Region Distributed Infrastructure Blueprint
+# Portfolio 5: Distributed and Cloud Database Exercise
+#
+# Production reference architecture showing:
+# 1. Distributed PostgreSQL with streaming replication and connection pooling (pgBouncer)
+# 2. MongoDB 3-node replica set with automated primary election
+# 3. Redis Sentinel high-availability caching cluster
+# =============================================================================
+
+version: '3.8'
+
+networks:
+  hotel-network:
+    driver: bridge
+
+volumes:
+  pg_primary_data:
+  pg_standby_data:
+  mongo_node1_data:
+  mongo_node2_data:
+  mongo_node3_data:
+  redis_master_data:
+
+services:
+  # ---------------------------------------------------------------------------
+  # 1. POSTGRESQL PRIMARY & REPLICA WITH STREAMING REPLICATION
+  # ---------------------------------------------------------------------------
+  pg-primary:
+    image: postgres:16.4-alpine
+    container_name: savannah-pg-primary
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-hotel_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme_hotel_2024}
+      POSTGRES_DB: ${POSTGRES_DB:-savannah_crest}
+      POSTGRES_HOST_AUTH_METHOD: scram-sha-256
+    command: >
+      postgres 
+      -c wal_level=replica 
+      -c max_wal_senders=10 
+      -c max_replication_slots=10 
+      -c hot_standby=on 
+      -c synchronous_commit=local
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_primary_data:/var/lib/postgresql/data
+    networks:
+      - hotel-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hotel_admin -d savannah_crest"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  pg-standby:
+    image: postgres:16.4-alpine
+    container_name: savannah-pg-standby
+    depends_on:
+      pg-primary:
+        condition: service_healthy
+    environment:
+      PGUSER: replicator
+      PGPASSWORD: changeme_repl_2024
+    command: >
+      bash -c "
+      until pg_basebackup -h pg-primary -D /var/lib/postgresql/data -U replicator -v -P -R -X stream; do
+        echo 'Waiting for primary to accept replication connection...';
+        sleep 2;
+      done;
+      chmod 0700 /var/lib/postgresql/data;
+      postgres -c hot_standby=on
+      "
+    ports:
+      - "5433:5432"
+    volumes:
+      - pg_standby_data:/var/lib/postgresql/data
+    networks:
+      - hotel-network
+
+  pgbouncer:
+    image: edoburu/pgbouncer:latest
+    container_name: savannah-pgbouncer
+    depends_on:
+      - pg-primary
+    environment:
+      DB_USER: ${POSTGRES_USER:-hotel_admin}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-changeme_hotel_2024}
+      DB_HOST: pg-primary
+      DB_PORT: 5432
+      DB_NAME: savannah_crest
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: 1000
+      DEFAULT_POOL_SIZE: 25
+    ports:
+      - "6432:5432"
+    networks:
+      - hotel-network
+
+  # ---------------------------------------------------------------------------
+  # 2. MONGODB THREE-NODE REPLICA SET (CP / RAFT CONSENSUS)
+  # ---------------------------------------------------------------------------
+  mongo-node1:
+    image: mongo:7.0.14
+    container_name: savannah-mongo-node1
+    command: ["mongod", "--replSet", "rs_savannah", "--bind_ip_all"]
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_node1_data:/data/db
+    networks:
+      - hotel-network
+
+  mongo-node2:
+    image: mongo:7.0.14
+    container_name: savannah-mongo-node2
+    command: ["mongod", "--replSet", "rs_savannah", "--bind_ip_all"]
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongo_node2_data:/data/db
+    networks:
+      - hotel-network
+
+  mongo-node3:
+    image: mongo:7.0.14
+    container_name: savannah-mongo-node3
+    command: ["mongod", "--replSet", "rs_savannah", "--bind_ip_all"]
+    ports:
+      - "27019:27017"
+    volumes:
+      - mongo_node3_data:/data/db
+    networks:
+      - hotel-network
+
+  # ---------------------------------------------------------------------------
+  # 3. REDIS SENTINEL HIGH AVAILABILITY CLUSTER
+  # ---------------------------------------------------------------------------
+  redis-master:
+    image: redis:7.4-alpine
+    container_name: savannah-redis-master
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_master_data:/data
+    networks:
+      - hotel-network
+
+  redis-sentinel:
+    image: redis:7.4-alpine
+    container_name: savannah-redis-sentinel
+    depends_on:
+      - redis-master
+    command: >
+      sh -c "
+      echo 'port 26379' > /tmp/sentinel.conf &&
+      echo 'sentinel monitor mymaster redis-master 6379 1' >> /tmp/sentinel.conf &&
+      echo 'sentinel down-after-milliseconds mymaster 3000' >> /tmp/sentinel.conf &&
+      echo 'sentinel failover-timeout mymaster 6000' >> /tmp/sentinel.conf &&
+      redis-sentinel /tmp/sentinel.conf
+      "
+    ports:
+      - "26379:26379"
+    networks:
+      - hotel-network
