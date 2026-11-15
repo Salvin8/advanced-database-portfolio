@@ -1,0 +1,43 @@
+=====================================================================
+SAVANNAH CREST HOTELS: DEADLOCK DEMONSTRATION & RESOLUTION HARNESS
+Database: savannah_crest at localhost:5432
+=====================================================================
+
+======================================================================
+PHASE 1: DEADLOCK REPRODUCTION (OPPOSITE LOCK ORDERING)
+Transaction 1 updates Room 1 -> Room 2
+Transaction 2 updates Room 2 -> Room 1
+======================================================================
+
+  [Session 1] Acquired exclusive lock on Room 1.
+  [Session 2] Acquired exclusive lock on Room 2.
+  [Session 1] Attempting to acquire lock on Room 2 (waiting on Session 2)...
+  [Session 2] Attempting to acquire lock on Room 1 (waiting on Session 1)...
+  -> [Session 1] DEADLOCK DETECTED BY POSTGRESQL KERNEL:
+     deadlock detected
+DETAIL:  Process 6433 waits for ShareLock on transaction 1152; blocked by process 6434.
+Process 6434 waits for ShareLock on transaction 1151; blocked by process 6433.
+HINT:  See server log for query details.
+CONTEXT:  while updating tuple (0,2) in relation "room"
+  [Session 2] Successfully committed!
+
+  -> DEADLOCK OUTCOME: CONFIRMED (SQLSTATE 40P01)
+  -> Victim Terminated: Session 1
+
+======================================================================
+PHASE 2: DEADLOCK RESOLUTION (CONSISTENT RESOURCE ORDERING)
+Rule: Both transactions ALWAYS acquire locks in ascending PK order (Room 1 -> Room 2)
+======================================================================
+
+  [Worker 1] Starting transaction. Requesting locks for Room 1 then Room 2 (ORDER BY room_id ASC)...
+  [Worker 2] Starting transaction. Requesting locks for Room 1 then Room 2 (ORDER BY room_id ASC)...
+  [Worker 1] Acquired both locks successfully! Performing updates...
+  [Worker 1] COMMITTED successfully without conflict.
+  [Worker 2] Acquired both locks successfully! Performing updates...
+  [Worker 2] COMMITTED successfully without conflict.
+
+  -> RESOLUTION OUTCOME: PASS! Both workers committed cleanly with ZERO deadlocks.
+
+=====================================================================
+DEADLOCK HARNESS FINISHED. Evidence recorded to portfolio-3-transactions-concurrency/evidence/deadlock_output.txt
+=====================================================================
