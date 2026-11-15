@@ -110,10 +110,21 @@ Data sourced from [evidence/performance-summary.csv](evidence/performance-summar
 
 ## 5. Visual Evidence & Screenshots
 
-- `TODO: add screenshot` [screenshots/p2-01-row-counts.png](screenshots/p2-01-row-counts.png) (Terminal showing `evidence/row-counts.txt` with 500k bookings)
-- `TODO: add screenshot` [screenshots/p2-02-baseline-plan-q06.png](screenshots/p2-02-baseline-plan-q06.png) (Terminal showing baseline execution plan for Q06 with SubPlan 2)
-- `TODO: add screenshot` [screenshots/p2-03-optimised-comparison.png](screenshots/p2-03-optimised-comparison.png) (Terminal showing performance summary CSV with up to 313x speedup)
-- `TODO: add screenshot` [screenshots/p2-04-index-sizes.png](screenshots/p2-04-index-sizes.png) (Terminal showing relation and index sizes highlighting the 24 kB BRIN index)
+- **Database Scale & Row Counts (`p2-01-row-counts.png`):**  
+  Terminal output showing row counts across PostgreSQL live tables (500k bookings, 520k payments, 50k guests).  
+  ![Row Counts](screenshots/p2-01-row-counts.png)
+
+- **Baseline Plan for Q06 SubPlan (`p2-02-baseline-plan-q06.png`):**  
+  Terminal execution showing baseline plan for correlated subquery Q06 with SubPlan 2 and 32,341 ms execution time.  
+  ![Baseline Plan Q06](screenshots/p2-02-baseline-plan-q06.png)
+
+- **Optimisation Benchmark Comparison (`p2-03-optimised-comparison.png`):**  
+  Terminal output of performance summary CSV showing the 10-query comparison with speedups up to 313x.  
+  ![Optimised Comparison](screenshots/p2-03-optimised-comparison.png)
+
+- **Table & Index Storage Footprint (`p2-04-index-sizes.png`):**  
+  Terminal output displaying `pg_relation_size` and highlighting the 24 kB BRIN index vs multi-megabyte B-trees.  
+  ![Index Sizes](screenshots/p2-04-index-sizes.png)
 
 ---
 

@@ -9,36 +9,36 @@ Timing is on.
                         1
 (1 row)
 
-Time: 17.443 ms
+Time: 17.376 ms
 
 --- 2. EXECUTING ATOMIC TRANSACTION (BEGIN ... COMMIT) ---
 BEGIN
-Time: 0.140 ms
+Time: 0.481 ms
  room_id | hotel_id | room_number | floor | is_active 
 ---------+----------+-------------+-------+-----------
        1 |        1 | 101         |     1 | t
 (1 row)
 
-Time: 7.152 ms
+Time: 3.581 ms
  conflict_count 
 ----------------
               1
 (1 row)
 
-Time: 10.329 ms
+Time: 12.158 ms
 ERROR:  duplicate key value violates unique constraint "booking_pkey"
 DETAIL:  Key (booking_id)=(700001) already exists.
+Time: 1.948 ms
 ERROR:  current transaction is aborted, commands ignored until end of transaction block
-Time: 4.662 ms
-Time: 0.476 ms
+Time: 2.408 ms
 ERROR:  current transaction is aborted, commands ignored until end of transaction block
+Time: 0.792 ms
 ERROR:  current transaction is aborted, commands ignored until end of transaction block
-Time: 0.665 ms
-Time: 0.851 ms
+Time: 0.789 ms
 ERROR:  current transaction is aborted, commands ignored until end of transaction block
-Time: 2.066 ms
+Time: 2.279 ms
 ROLLBACK
-Time: 4.824 ms
+Time: 0.386 ms
 
 --- 3. VERIFY POST-TRANSACTION PERSISTED STATE ---
  booking_id |    booking_ref    | booking_status | total_amount | room_id | check_in_date | check_out_date |          stay           | amount_paid | payment_status |  transaction_ref  
@@ -46,7 +46,7 @@ Time: 4.824 ms
      700001 | TX-CONFIRMED-2027 | confirmed      |    180000.00 |       1 | 2027-03-01    | 2027-03-05     | [2027-03-01,2027-03-05) |   180000.00 | completed      | TXN-CARD-2027-001
 (1 row)
 
-Time: 15.896 ms
+Time: 13.021 ms
 
 --- 4. VERIFY AUTOMATIC AUDIT TRIGGER CAPTURE ---
  log_id | table_name | record_id | action | old_status | new_status | changed_by  |          changed_at           
@@ -55,22 +55,22 @@ Time: 15.896 ms
       3 | booking    |    700001 | UPDATE | pending    | confirmed  | hotel_admin | 2026-11-14 11:18:18.374432+00
 (2 rows)
 
-Time: 3.572 ms
+Time: 2.610 ms
 
 =====================================================================
 PART 2: ENTERPRISE STORED PROCEDURE WITH EXCEPTION HANDLING
 =====================================================================
 CREATE PROCEDURE
-Time: 11.566 ms
+Time: 35.696 ms
 
 --- 5. TESTING STORED PROCEDURE (VALID EXECUTION) ---
 NOTICE:  Transaction aborted: duplicate key value violates unique constraint "booking_booking_ref_key" (SQLSTATE: 23505)
 NOTICE:  Procedure Return -> ID: <NULL>, Result: FAILED: Unexpected error (duplicate key value violates unique constraint "booking_booking_ref_key")
 DO
-Time: 12.547 ms
+Time: 7.858 ms
 
 --- 6. TESTING STORED PROCEDURE CONFLICT HANDLING (OVERLAPPING DATES) ---
 NOTICE:  Conflict detected: Room 2 is occupied between 2027-04-12 and 2027-04-16
 NOTICE:  Procedure Return -> ID: <NULL>, Result: FAILED: Room already booked for requested dates (Exclusion Violation)
 DO
-Time: 17.030 ms
+Time: 26.667 ms

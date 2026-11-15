@@ -15,10 +15,10 @@ Transaction 2 updates Room 2 -> Room 1
   [Session 2] Attempting to acquire lock on Room 1 (waiting on Session 1)...
   -> [Session 1] DEADLOCK DETECTED BY POSTGRESQL KERNEL:
      deadlock detected
-DETAIL:  Process 6433 waits for ShareLock on transaction 1152; blocked by process 6434.
-Process 6434 waits for ShareLock on transaction 1151; blocked by process 6433.
+DETAIL:  Process 3003 waits for ShareLock on transaction 1689; blocked by process 3002.
+Process 3002 waits for ShareLock on transaction 1688; blocked by process 3003.
 HINT:  See server log for query details.
-CONTEXT:  while updating tuple (0,2) in relation "room"
+CONTEXT:  while updating tuple (3,137) in relation "room"
   [Session 2] Successfully committed!
 
   -> DEADLOCK OUTCOME: CONFIRMED (SQLSTATE 40P01)

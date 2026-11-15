@@ -1,6 +1,6 @@
 ================================================================================
 SAVANNAH CREST HOTELS - MONGODB 7.0 DOCUMENT OPERATIONS & AGGREGATIONS
-Timestamp: 2026-11-15T09:57:25.289830
+Timestamp: 2026-11-15T11:11:46.483806
 Target Database: savannah_crest_nosql at localhost:27017
 ================================================================================
 
@@ -10,7 +10,7 @@ STEP 1: ETL - EXTRACTING RELATIONAL DATA FROM POSTGRESQL
 ✓ Successfully connected to PostgreSQL (savannah_crest)
 ✓ Extracted top 200 guests by booking frequency.
 ✓ Extracted 10257 booking-room records.
-✓ Extracted 10676 payment records.
+✓ Extracted 10674 payment records.
 ✓ Transformed 200 complete guest document profiles.
 
 ================================================================================
@@ -31,7 +31,7 @@ STEP 3: MONGODB CRUD DEMONSTRATIONS
 ================================================================================
 
 [3.1 CREATE: insert_one]
-✓ Inserted walk-in guest with ObjectId: 6af98208a6e4fd948cb06785
+✓ Inserted walk-in guest with ObjectId: 6af9937c30333801418806fe
 
 [3.2 READ: find with filters - Nigerian Platinum Guests]
   - Folake Okoro (folake.okoro4833@mail.ng) | Spent: ₦7,258,250.00
@@ -69,8 +69,8 @@ STEP 3: MONGODB CRUD DEMONSTRATIONS
     "first_visit": "2026-11-20",
     "last_visit": "2026-12-24"
   },
-  "created_at": "2026-11-15T09:57:28.692078",
-  "updated_at": "2026-11-15T09:57:28.727670"
+  "created_at": "2026-11-15T11:11:56.055611",
+  "updated_at": "2026-11-15T11:11:56.137901"
 }
 
 [3.5 DELETE: delete_one - Removing walk-in demo guest]
@@ -83,50 +83,50 @@ STEP 4: ADVANCED MONGODB AGGREGATION PIPELINES
 --- Pipeline 1: Financial Analytics by City ($unwind -> $group -> $sort) ---
 City               |   Bookings |  Total Revenue (NGN) |  Avg Value (NGN)
 ------------------------------------------------------------------------
-Lagos              |      1,623 | ₦    222,896,250.00 | ₦    137,335.95
-Abuja              |      1,635 | ₦    214,531,250.00 | ₦    131,211.77
-Enugu              |      1,524 | ₦    168,538,000.00 | ₦    110,589.24
-Kano               |      1,548 | ₦    164,695,000.00 | ₦    106,392.12
-Ibadan             |      1,551 | ₦    163,639,000.00 | ₦    105,505.48
-Port Harcourt      |      1,544 | ₦    161,718,000.00 | ₦    104,739.64
+Lagos              |      1,623 | ₦    222,475,000.00 | ₦    137,076.40
+Abuja              |      1,639 | ₦    213,780,000.00 | ₦    130,433.19
+Enugu              |      1,522 | ₦    168,245,000.00 | ₦    110,542.05
+Kano               |      1,542 | ₦    164,355,000.00 | ₦    106,585.60
+Ibadan             |      1,554 | ₦    162,673,000.00 | ₦    104,680.18
+Port Harcourt      |      1,546 | ₦    162,127,000.00 | ₦    104,868.69
 
 --- Pipeline 2: Room Type Popularity ($unwind -> $group -> $project -> $sort) ---
 Room Type              |   Bookings |  Total Revenue (NGN) |  Avg Booking Value
 ------------------------------------------------------------------------------
-Standard Room          |      5,103 | ₦    333,644,000.00 | ₦       65,381.93
-Deluxe Room            |      3,111 | ₦    330,682,500.00 | ₦      106,294.60
-Executive Suite        |      1,493 | ₦    297,691,250.00 | ₦      199,391.33
-Presidential Suite     |        550 | ₦    225,540,000.00 | ₦      410,072.73
+Standard Room          |      5,096 | ₦    333,910,000.00 | ₦       65,523.94
+Deluxe Room            |      3,130 | ₦    333,045,000.00 | ₦      106,404.15
+Executive Suite        |      1,487 | ₦    295,800,000.00 | ₦      198,924.01
+Presidential Suite     |        544 | ₦    222,255,000.00 | ₦      408,556.99
 
 --- Pipeline 3: Guest Loyalty Tier Value Distribution ---
 Tier         |   Guests |    Total Spend (NGN) |      Avg LTV (NGN) |   Avg Bookings
 --------------------------------------------------------------------------------
-Platinum     |      200 | ₦  1,096,017,500.00 | ₦    5,480,087.50 |           51.3
+Platinum     |      200 | ₦  1,093,655,000.00 | ₦    5,468,275.00 |           51.3
 
 --- Pipeline 4: Historical Yearly Trends ($unwind -> $project -> $group -> $sort) ---
 Year     |   Total Bookings |    Total Revenue (NGN) |   Cancellations
 --------------------------------------------------------------------
-2020     |            1,628 | ₦      187,982,750.00 |             123
-2021     |            1,703 | ₦      199,419,000.00 |             121
-2022     |            1,589 | ₦      179,891,500.00 |             131
-2023     |            1,646 | ₦      193,560,750.00 |             141
-2024     |            1,643 | ₦      192,232,000.00 |             139
-2025     |            1,585 | ₦      180,302,250.00 |             145
-2026     |              461 | ₦       53,809,500.00 |              32
+2020     |            1,621 | ₦      186,836,500.00 |             122
+2021     |            1,712 | ₦      200,749,000.00 |             122
+2022     |            1,586 | ₦      179,356,750.00 |             130
+2023     |            1,644 | ₦      192,430,250.00 |             140
+2024     |            1,648 | ₦      192,657,250.00 |             140
+2025     |            1,583 | ₦      178,777,750.00 |             145
+2026     |              461 | ₦       53,842,500.00 |              32
 2027     |                2 | ₦          360,000.00 |               0
 
 --- Pipeline 5: Multi-level Payment Method Breakdown ---
 Method           |    Txn Count |    Total Settled (NGN) |    Failed Txns
 ----------------------------------------------------------------------
-card             |        6,461 | ₦      646,618,750.00 |            413
-bank_transfer    |        2,369 | ₦      281,270,500.00 |              0
-mobile_money     |        1,388 | ₦      159,060,250.00 |              0
-cash             |          458 | ₦       51,432,250.00 |              0
+card             |        6,457 | ₦      645,164,750.00 |            414
+bank_transfer    |        2,373 | ₦      280,917,250.00 |              0
+mobile_money     |        1,388 | ₦      158,197,750.00 |              0
+cash             |          456 | ₦       51,567,250.00 |              0
 
 ================================================================================
 STEP 5: QUERY PLAN OPTIMIZATION - COLLSCAN VS IXSCAN (explain)
 ================================================================================
-Benchmark Query: db.guest_profiles.find({ email: 'fatima.eze6331@mail.ng' })
+Benchmark Query: db.guest_profiles.find({ email: 'zainab.sanusi1104@mail.ng' })
 
 [A] WITH INDEX (idx_email):
   Stage: FETCH
@@ -158,8 +158,8 @@ Execution Time (ms)       |                         0 |                      0
 STEP 6: COLLECTION STORAGE & DOCUMENT HEALTH SUMMARY
 ================================================================================
   Total Documents: 200
-  Total Data Size: 4257.31 KB
-  Avg Document Size: 21797.00 bytes
+  Total Data Size: 4256.96 KB
+  Avg Document Size: 21795.00 bytes
   Total Storage Size: 4.00 KB
   Total Index Size: 112.00 KB
   Number of Indexes: 6

@@ -33,7 +33,7 @@ logs:
 
 # --- Portfolio targets ---
 
-.PHONY: p1 p1-test p2 p2-seed p2-baseline p2-optimise p2-benchmark p3 p3-acid p3-isolation p3-concurrency p3-deadlock p4 p4-mongo p4-redis p5 p5-partitioning p5-saga
+.PHONY: p1 p1-test p2 p2-seed p2-baseline p2-optimise p2-benchmark p3 p3-acid p3-isolation p3-concurrency p3-deadlock p4 p4-mongo p4-redis p5 p5-partitioning p5-saga verify-all
 
 p1:
 	@echo "Portfolio 1: Applying schema to clean database..."
@@ -122,3 +122,8 @@ p5-saga:
 	@echo "Portfolio 5: Executing Distributed Saga Pattern orchestrator simulation..."
 	.venv/bin/python3 portfolio-5-distributed-cloud/scripts/saga_orchestrator.py
 	@echo "Portfolio 5: Saga orchestration evidence written to portfolio-5-distributed-cloud/evidence/saga-orchestrator-output.txt"
+
+verify-all: p1-test p3-acid p3-isolation p3-concurrency p3-deadlock p4 p5
+	@echo "======================================================================"
+	@echo "ALL PORTFOLIOS (P1-P5) VERIFIED SUCCESSFULLY AGAINST LIVE DATABASES!"
+	@echo "======================================================================"

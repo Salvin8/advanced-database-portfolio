@@ -1,16 +1,16 @@
 # Empirical Double-Booking Concurrency Experiment Results
 
 **Test Configuration:** 20 concurrent client threads competing for 1 available room/inventory.
-**Execution Timestamp:** 2026-11-15 08:00:56
+**Execution Timestamp:** 2026-11-15 11:11:31
 
 ## 1. Summary Comparison Table
 
 | Strategy | Clients | Successes | Failures / Rejected | Persisted Bookings | Duration (s) | Verdict |
 |---|---|---|---|---|---|---|
-| **Run A (Unsafe Check-then-Insert)** | 20 | 20 | 0 | **20** | 1.786s | CRITICAL FAILURE: 20 double bookings persisted. |
-| **Run B (Pessimistic FOR UPDATE)** | 20 | 1 | 19 | **1** | 1.003s | PASS: Exactly 1 client won; 19 rejected safely by lock serialization. |
-| **Run C (GiST Exclusion Constraint)** | 20 | 1 | 19 | **1** | 1.059s | PASS: Kernel-level enforcement; exactly 1 won, 19 caught exclusion_violation. |
-| **Run D (Optimistic Version CAS)** | 20 | 1 | 19 | **1** | 0.644s | PASS: Compare-and-swap prevented overbooking (11 retries caught). |
+| **Run A (Unsafe Check-then-Insert)** | 20 | 20 | 0 | **20** | 0.531s | CRITICAL FAILURE: 20 double bookings persisted. |
+| **Run B (Pessimistic FOR UPDATE)** | 20 | 1 | 19 | **1** | 0.683s | PASS: Exactly 1 client won; 19 rejected safely by lock serialization. |
+| **Run C (GiST Exclusion Constraint)** | 20 | 1 | 19 | **1** | 0.666s | PASS: Kernel-level enforcement; exactly 1 won, 19 caught exclusion_violation. |
+| **Run D (Optimistic Version CAS)** | 20 | 1 | 19 | **1** | 1.474s | PASS: Compare-and-swap prevented overbooking (19 retries caught). |
 
 ## 2. Key Findings
 

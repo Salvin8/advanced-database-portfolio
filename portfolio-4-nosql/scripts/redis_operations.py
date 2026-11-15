@@ -47,7 +47,8 @@ class TeeWriter:
         self.file.write(data)
 
     def flush(self):
-        self.stdout.flush(self.file.flush())
+        self.file.flush()
+        self.stdout.flush()
 
     def close(self):
         self.file.close()

@@ -37,6 +37,11 @@ redisdata/
 *.bak
 *.log
 
-# Agent prompt (not part of the portfolio submission)
+# Student study guides, checklists & screenshot capture guides (not for coursework submission)
 hotel-portfolio-agent-prompt.md
+docs/viva-voce-guide.md
+docs/submission-checklist.md
+docs/reflection-template.md
+portfolio-*/screenshots/README.md
+**/screenshots/README.md
 

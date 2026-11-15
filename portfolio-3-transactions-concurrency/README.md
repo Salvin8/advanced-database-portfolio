@@ -110,9 +110,17 @@ Data sourced directly from [evidence/double-booking-results.md](evidence/double-
 
 ## 5. Visual Evidence & Screenshots
 
-- `TODO: add screenshot` [screenshots/p3-01-deadlock-session-b.png](screenshots/p3-01-deadlock-session-b.png) (Terminal showing `ERROR: deadlock detected (SQLSTATE 40P01)` and lock detail)
-- `TODO: add screenshot` [screenshots/p3-02-double-booking-table.png](screenshots/p3-02-double-booking-table.png) (Terminal showing comparative double booking results table)
-- `TODO: add screenshot` [screenshots/p3-03-isolation-levels-output.png](screenshots/p3-03-isolation-levels-output.png) (Terminal showing SSI write skew pivot cancellation and automated retry loop)
+- **Deadlock Detection & Resolution (`p3-01-deadlock-session-b.png`):**  
+  Terminal execution showing Phase 1 deadlock detection (`SQLSTATE 40P01`) and Phase 2 resolution via consistent lock ordering.  
+  ![Deadlock Detection](screenshots/p3-01-deadlock-session-b.png)
+
+- **Double-Booking Prevention Benchmark Results (`p3-02-double-booking-table.png`):**  
+  Terminal output showing comparative results table: 20 double bookings in Unsafe Run A vs 0 in Runs B, C, and D.  
+  ![Double Booking Results](screenshots/p3-02-double-booking-table.png)
+
+- **SSI Write Skew Anomaly & Retry Loop (`p3-03-isolation-levels-output.png`):**  
+  Terminal output demonstrating SSI pivot cancellation (`SQLSTATE 40001`) and the automated retry loop maintaining invariant $\ge 1$.  
+  ![Isolation Levels Output](screenshots/p3-03-isolation-levels-output.png)
 
 ---
 

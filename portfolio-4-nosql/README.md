@@ -2,7 +2,7 @@
 
 **Coursework:** Advanced Database Systems (MIT 8103)  
 **System:** Savannah Crest Hotels Management System  
-**Author:** Mubarak  
+**Author:** Salvin Okezua  
 **Technologies:** MongoDB 7.0, Redis 7.4, PostgreSQL 16, Python 3.12 (psycopg, pymongo, redis)
 
 ---
@@ -45,6 +45,7 @@ portfolio-4-nosql/
 ## 3. MongoDB 7.0 Document Model
 
 ### 3.1 Document Architecture
+
 The `guest_profiles` collection collapses the normalised PostgreSQL tables (`guest`, `booking`, `booking_room`, `payment`, `room`, `room_type`) into a single denormalised document:
 
 ```json
@@ -94,6 +95,7 @@ The `guest_profiles` collection collapses the normalised PostgreSQL tables (`gue
 ```
 
 ### 3.2 Schema Validation & Indexing
+
 - Enforced via **MongoDB JSON Schema Validation** (`$jsonSchema`) with strict typing, enum validation (`loyalty_tier` $\in$ {Bronze, Silver, Gold, Platinum}), and email regex checking.
 - Indexed with five strategic indexes:
   - `idx_guest_id`: Unique B-tree index on `guest_id`.
@@ -103,20 +105,22 @@ The `guest_profiles` collection collapses the normalised PostgreSQL tables (`gue
   - `idx_nat_tier`: Compound index on `{ nationality: 1, loyalty_tier: 1 }`.
 
 ### 3.3 Empirical Index Performance
+
 Comparing query execution plans via `.explain("executionStats")` for `find({ email: 'fatima.eze6331@mail.ng' })`:
 
-| Metric | Without Index (`COLLSCAN`) | With Index (`IXSCAN` + `FETCH`) | Impact |
-| :--- | :---: | :---: | :--- |
-| **Stage** | `COLLSCAN` | `FETCH` $\leftarrow$ `IXSCAN` | Direct B-tree key traversal |
-| **Documents Examined** | **200** | **1** | **99.5% reduction** |
-| **Keys Examined** | 0 | 1 | Exact match |
-| **Execution Time** | $2\text{ ms}$ | $0\text{ ms}$ | Immediate in-memory resolution |
+| Metric                 | Without Index (`COLLSCAN`) | With Index (`IXSCAN` + `FETCH`) | Impact                         |
+| :--------------------- | :------------------------: | :-----------------------------: | :----------------------------- |
+| **Stage**              |         `COLLSCAN`         |  `FETCH` $\leftarrow$ `IXSCAN`  | Direct B-tree key traversal    |
+| **Documents Examined** |          **200**           |              **1**              | **99.5% reduction**            |
+| **Keys Examined**      |             0              |                1                | Exact match                    |
+| **Execution Time**     |       $2\text{ ms}$        |          $0\text{ ms}$          | Immediate in-memory resolution |
 
 ---
 
 ## 4. Redis 7.4 In-Memory Caching & Data Structures
 
 ### 4.1 Five Core Data Structures
+
 1. **Strings (`room:101:available`, `hotel:1:available_rooms`):** Transient flags with 300s TTL and atomic integer counters (`INCR`/`DECR`) for race-free inventory updates.
 2. **Hashes (`session:guest:usr_98234a`):** Field-level session storage with 24-hour expiration (`EXPIRE 86400`).
 3. **Lists (`hotel:1:recent_bookings`):** Real-time booking audit log capped at 50 events using `LPUSH` and `LTRIM`.
@@ -124,6 +128,7 @@ Comparing query execution plans via `.explain("executionStats")` for `find({ ema
 5. **Sorted Sets (`leaderboard:guest_spend`):** Skip-list-backed $\mathcal{O}(\log N)$ guest ranking based on lifetime expenditure.
 
 ### 4.2 Cache-Aside Pattern Benchmark
+
 Implemented for room availability search across dates (`2026-12-01` to `2026-12-05`):
 
 ```
@@ -134,7 +139,60 @@ Call 2 (Cached Hit): [HIT]  -> 20 rooms returned | Latency: 1.550 ms (Redis)
 
 ---
 
-## 5. Execution & Verification Guide
+## 5. Visual Evidence & Screenshots
+
+- **MongoDB Document Model & Embedded Hierarchy (`p4-01-mongodb-document.png`):**  
+  Terminal output showing expanded `guest_profiles` BSON document with embedded bookings array, loyalty tier, and lifetime spend.  
+  ![MongoDB Document Model](screenshots/p4-01-mongodb-document.png)
+  ![MongoDB Document Model Details](screenshots/p4-01-mongodb-document_2.png)
+
+- **MongoDB Aggregation Pipeline Execution (`p4-02-mongodb-aggregation.png`):**  
+  Terminal execution of Aggregation Pipeline 1 showing revenue totals grouped by hotel property.  
+  ![MongoDB Aggregation](screenshots/p4-02-mongodb-aggregation.png)
+
+- **MongoDB Index Optimisation & Explain Plans (`p4-03-mongodb-explain.png`):**  
+  Terminal `explain()` output comparing unindexed `COLLSCAN` vs indexed `IXSCAN` (0 ms execution time).  
+  ![MongoDB Explain Comparison](screenshots/p4-03-mongodb-explain.png)
+
+- **Redis Five Primitive Data Structures (`p4-04-redis-data-structures.png`):**  
+  Terminal output displaying active Redis keyspace across String, Hash, List, Set, and Sorted Set types.  
+  ![Redis Data Structures](screenshots/p4-04-redis-data-structures.png)
+
+- **Redis Cache-Aside Benchmark (`p4-05-redis-cache-benchmark.png`):**  
+  Terminal output demonstrating Cache-Aside acceleration ($29.6\text{ ms}$ PostgreSQL query vs $1.5\text{ ms}$ Redis cache hit).  
+  ![Redis Cache Benchmark](screenshots/p4-05-redis-cache-benchmark.png)
+
+---
+
+## 6. How I Would Explain This (Viva Notes)
+
+1. **Why an embedded document model was chosen for guest profiles:**
+   - In Savannah Crest Hotels, bookings and payments have a contained, bounded relationship with each guest (1 to 70 bookings per guest). Embedding bookings directly inside `guest_profiles` delivers data co-locality: a single lookup retrieves the guest profile, stay history, and lifetime spend in $O(1)$ time without multi-table joins.
+   - _Alternative rejected:_ Normalised referencing across separate collections, which would require multi-collection `$lookup` joins in MongoDB, defeating the read-performance rationale of a document store.
+
+2. **Why MongoDB cannot replace PostgreSQL for core room reservations:**
+   - Room availability is protected by PostgreSQL's `EXCLUDE USING gist (room_id WITH =, stay WITH &&)`, guaranteeing zero overlapping reservations at the storage kernel level. MongoDB lacks declarative interval exclusion constraints, requiring distributed locks or application coordination that can fail under high contention.
+   - _Alternative rejected:_ Full migration of inventory and reservations to MongoDB.
+
+3. **Why Cache-Aside was chosen over Write-Through caching for Redis:**
+   - Under Cache-Aside, Redis caches only high-demand availability queries (`availability:hotel:X:date:Y`). When a reservation is confirmed in PostgreSQL, the cache is explicitly invalidated (`DEL key`), forcing the next read to fetch fresh state. This guarantees zero risk of desynchronized stale availability caches.
+   - _Alternative rejected:_ Write-Through caching, which adds write latency to every reservation transaction and bloats Redis memory with unread room inventory.
+
+4. **Why Redis room holds use atomic `SET ... NX EX`:**
+   - During room selection, guests receive a temporary 10-minute hold (`hold:room:X:dates:Y`). Using `SET key value NX EX 600` guarantees atomic mutual exclusion: only one concurrent user can acquire the hold, and the key expires automatically if the guest abandons checkout.
+   - _Alternative rejected:_ Multi-command `GET` followed by `SET`, which introduces a race condition where two users can hold the same room.
+
+5. **Why guest reviews reference `hotel_id` rather than embedding within `hotel_catalog`:**
+   - A popular property accumulates tens of thousands of guest reviews over time. Embedding reviews inside the hotel document would cause unbounded document growth, risking MongoDB's 16 MB BSON document limit and triggering expensive WiredTiger memory reallocation.
+   - _Alternative rejected:_ Embedding all reviews inside `hotel_catalog`.
+
+6. **Why PostgreSQL remains the authoritative single source of truth:**
+   - In a polyglot persistence architecture, having multiple writable databases causes split-brain data anomalies. All financial ledgers and room status mutations execute in PostgreSQL first; MongoDB and Redis serve strictly as read projections and low-latency cache layers.
+   - _Alternative rejected:_ Dual-write application patterns where the application writes to PostgreSQL and MongoDB simultaneously without a distributed transaction orchestrator.
+
+---
+
+## 7. Execution & Verification Guide
 
 All targets are fully automated within the root `Makefile`:
 
@@ -149,69 +207,3 @@ make p4
 make p4-mongo   # Runs ETL, CRUD, aggregations, and explain() benchmarks
 make p4-redis   # Runs 5 data structures, Cache-Aside, invalidation, & benchmarks
 ```
-
----
-
-## 6. Viva Voce Defense Preparation: Questions & Detailed Answers
-
-### Q1: Why did you choose an embedded document model for guest bookings rather than referencing? Under what conditions would this decision break down?
-> **Answer:**  
-> In Savannah Crest Hotels, bookings and payments have a **contained, bounded 1:N relationship** with the guest. Guests accumulate between 1 and 70 bookings over several years. Embedding bookings directly within `guest_profiles` provides **data co-locality**: a single query fetches the guest's profile, full stay history, and lifetime statistics in $\mathcal{O}(1)$ time without expensive multi-table joins.  
-> 
-> **Breakdown Conditions:** This design would break down if:
-> 1. The relationship were **unbounded** (e.g., IoT sensor telemetry or clickstream tracking), where documents would rapidly approach MongoDB's hard **16 MB BSON document size ceiling**.
-> 2. Bookings were frequently updated by concurrent external processes, causing **write amplification** and document relocation in WiredTiger. In our architecture, high-frequency updates land in PostgreSQL first, and only stable/committed records project into MongoDB.
-
----
-
-### Q2: How does MongoDB ensure atomicity during updates, and what happens when an embedded array modification exceeds the allocated document space?
-> **Answer:**  
-> MongoDB guarantees **strict ACID atomicity at the single-document level**. When modifying a document using operators such as `$push` (to append a booking), `$inc` (to increment spend counters), and `$set` (to update loyalty tier), all operations execute atomically within WiredTiger. Other readers never observe an inconsistent partial state where the booking was appended but the spend was not updated.  
-> 
-> Under the WiredTiger storage engine, documents do not use static padding factors. Instead, when an in-place update exceeds available space, WiredTiger allocates a new unfragmented memory buffer, writes the enlarged BSON document, updates the internal B-tree leaf pointer, and marks the old disk space for reclamation during checkpointing. If the document exceeds the hard **16 MB limit**, MongoDB raises `BSONObjectTooLarge` (`code 10334`) and rejects the write.
-
----
-
-### Q3: Why can't MongoDB replace PostgreSQL as the primary reservation database in your system?
-> **Answer:**  
-> MongoDB cannot replace PostgreSQL for our core reservation engine due to **cross-document constraint limitations**:
-> 1. **Interval Exclusion Constraints:** Savannah Crest Hotels enforces room availability using PostgreSQL's `EXCLUDE USING gist (room_id WITH =, stay WITH &&)`. This mathematical exclusion guarantees that no two concurrent transactions can reserve the same room for overlapping dates at the storage engine level. MongoDB lacks declarative interval exclusion constraints.
-> 2. **Multi-Document ACID Across Global State:** While MongoDB supports multi-document transactions (introduced in 4.0), they incur significant distributed lock overhead and snapshot synchronization costs compared to PostgreSQL's native MVCC and row-level locks (`SELECT ... FOR UPDATE`).
-> 3. **Financial Audit Trail:** The relational schema maintains strict foreign key referential integrity (`ON DELETE RESTRICT`) preventing orphan financial ledgers, ensuring strict accounting compliance.
-
----
-
-### Q4: Explain the Cache-Aside pattern implemented in Redis. What is the "Thundering Herd" problem, and how is it mitigated?
-> **Answer:**  
-> Under **Cache-Aside (Lazy Loading)**, the application coordinates between Redis and PostgreSQL:
-> 1. The application checks Redis for key `cache:avail:h1:2026-12-01:2026-12-05`.
-> 2. On a **Cache Hit**, Redis immediately returns the cached JSON string ($1.5\text{ ms}$).
-> 3. On a **Cache Miss**, the application queries PostgreSQL ($30\text{--}90\text{ ms}$), populates Redis with an explicit Time-To-Live (`EX 300`), and returns the data.  
-> 
-> **The Thundering Herd (Cache Stampede):** When a highly requested key (e.g., peak Christmas dates) expires under heavy traffic, hundreds of concurrent requests experience a cache miss simultaneously and hammer PostgreSQL with identical expensive queries, causing CPU spikes or connection pool exhaustion.  
-> **Mitigation:**
-> - **Distributed Mutex (`SET lock:key token NX EX 10`):** Only the first worker acquires the lock to query PostgreSQL and refresh Redis; other requests wait or return slightly stale cache.
-> - **Probabilistic Early Expiration (XFetch algorithm):** Requests probabilistically recompute and refresh the cache *before* it formally expires based on read frequency and remaining TTL.
-
----
-
-### Q5: How does Redis achieve high throughput without multithreading, and what are the trade-offs of its memory eviction policies?
-> **Answer:**  
-> Redis achieves upwards of 100,000+ operations per second primarily because:
-> 1. **In-Memory Storage:** All data structures reside entirely in physical RAM, avoiding disk I/O, page faults, and buffer cache synchronisation.
-> 2. **Single-Threaded Event Multiplexing:** Redis uses an event loop built on OS I/O multiplexers (`epoll` on Linux, `kqueue` on macOS). By processing commands sequentially in a single thread, Redis completely eliminates the overhead of thread context switching, thread synchronization locks, and race conditions.  
-> 
-> **Memory Eviction Trade-offs:**  
-> When RAM reaches `maxmemory`:
-> - `volatile-lru`: Evicts least-recently used keys that have an explicit TTL set. Ideal when volatile caches coexist with persistent lookup tables.
-> - `allkeys-lru`: Evicts LRU keys across the entire keyspace. Best when Redis is purely a disposable cache, but risks dropping important session tokens.
-> - `noeviction`: Returns errors on write operations. Guarantees zero data loss, but causes application write failures if memory is exhausted.
-
----
-
-### Q6: In a Polyglot architecture, how do you handle data consistency discrepancies across PostgreSQL, MongoDB, and Redis?
-> **Answer:**  
-> In Savannah Crest Hotels, we establish a strict **Hierarchy of Authority**:
-> 1. **Single Source of Truth:** PostgreSQL is the sole authoritative system of record. Writes *never* originate in MongoDB or Redis independently.
-> 2. **Cache Invalidation over Mutation:** For Redis, we favour **explicit cache eviction** (`DEL key`) on booking state mutations rather than complex in-memory updates. Deleting the cache forces the next read to fetch authoritative state from PostgreSQL, preventing stale availability windows.
-> 3. **Asynchronous Read Model Projection:** For MongoDB `guest_profiles`, committed transactions in PostgreSQL are propagated via **Change Data Capture (CDC)** (such as Debezium reading PostgreSQL WAL or database event triggers). Even if MongoDB is momentarily a few milliseconds behind PostgreSQL (eventual consistency), the guest dossier remains functionally correct for mobile browsing, while all reservations are strictly validated against PostgreSQL before confirmation.

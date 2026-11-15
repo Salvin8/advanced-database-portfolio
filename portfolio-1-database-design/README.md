@@ -85,9 +85,18 @@ CONSTRAINT excl_no_overlapping_booking EXCLUDE USING gist (
 
 ## 5. Visual Evidence & Screenshots
 
-- `TODO: add screenshot` [screenshots/p1-01-schema-tables.png](screenshots/p1-01-schema-tables.png) (Terminal showing `\dt+` output of all 12 tables)
-- `TODO: add screenshot` [screenshots/p1-02-exclusion-constraint.png](screenshots/p1-02-exclusion-constraint.png) (Terminal showing `\d+ booking_room` focusing on the GiST exclusion constraint)
-- `TODO: add screenshot` [screenshots/p1-03-constraint-violation-tests.png](screenshots/p1-03-constraint-violation-tests.png) (Terminal output executing `03_constraint_tests.sql` showing PostgreSQL constraint exceptions)
+- **Schema Tables Overview (`p1-01-schema-tables.png`):**  
+  Terminal output showing all 12 relation tables with their size and persistence.  
+  ![Schema Tables](screenshots/p1-01-schema-tables.png)
+
+- **Exclusion Constraint Definition (`p1-02-exclusion-constraint.png`):**  
+  Terminal output showing `booking_room` structure, the generated `stay` range, and the `excl_no_overlapping_booking` GiST constraint.  
+  ![Exclusion Constraint](screenshots/p1-02-exclusion-constraint.png)
+
+- **Constraint Violation & Integrity Tests (`p1-03-constraint-violation-tests.png`):**  
+  Terminal execution of `03_constraint_tests.sql` showing PostgreSQL rejecting overlapping reservations and negative payments.  
+  ![Constraint Violation Tests](screenshots/p1-03-constraint-violation-tests.png)
+  ![Constraint Violation Tests Part 2](screenshots/p1-03-constraint-violation-tests_2.png)
 
 ---
 

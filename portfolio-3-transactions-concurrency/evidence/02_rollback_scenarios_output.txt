@@ -11,17 +11,17 @@ SCENARIO A: PAYMENT FAILURE MID-TRANSACTION (APPLICATION ROLLBACK)
             0
 (1 row)
 
-Time: 12.900 ms
+Time: 8.788 ms
 BEGIN
-Time: 0.219 ms
+Time: 0.254 ms
 INSERT 0 1
-Time: 7.334 ms
+Time: 8.092 ms
 INSERT 0 1
-Time: 11.731 ms
+Time: 12.842 ms
 >> External Payment Gateway Error: Card declined (insufficient funds).
 >> Application issuing explicit ROLLBACK...
 ROLLBACK
-Time: 0.715 ms
+Time: 0.412 ms
 
 --- VERIFYING SCENARIO A: ZERO PARTIAL RECORDS PERSISTED ---
  booking_header_count | booking_room_count | payment_count 
@@ -29,25 +29,25 @@ Time: 0.715 ms
                     0 |                  0 |             0
 (1 row)
 
-Time: 5.130 ms
+Time: 4.587 ms
 
 ---------------------------------------------------------------------
 SCENARIO B: CONSTRAINT VIOLATION INSIDE TRANSACTION
 ---------------------------------------------------------------------
 BEGIN
-Time: 0.318 ms
+Time: 0.261 ms
 INSERT 0 1
-Time: 2.321 ms
+Time: 1.694 ms
 >> Attempting invalid INSERT with negative payment (-50000)...
-Time: 0.936 ms
->> Attempting to execute another statement in the aborted transaction block...
 ERROR:  new row for relation "payment" violates check constraint "payment_amount_check"
-DETAIL:  Failing row contains (700003, 700003, -50000.00, card, completed, TXN-FAIL-001, 2026-11-14 11:19:28.339404+00, 2026-11-14 11:19:28.339404+00).
+DETAIL:  Failing row contains (700003, 700003, -50000.00, card, completed, TXN-FAIL-001, 2026-11-15 11:11:22.096595+00, 2026-11-15 11:11:22.096595+00).
 ERROR:  current transaction is aborted, commands ignored until end of transaction block
-Time: 0.366 ms
+Time: 1.311 ms
+>> Attempting to execute another statement in the aborted transaction block...
+Time: 0.289 ms
 >> Issuing ROLLBACK to exit aborted transaction state...
 ROLLBACK
-Time: 0.863 ms
+Time: 0.351 ms
 
 --- VERIFYING SCENARIO B: TRANSACTION WAS COMPLETELY REVERTED ---
  booking_after_constraint_failure 
@@ -55,36 +55,36 @@ Time: 0.863 ms
                                 0
 (1 row)
 
-Time: 1.650 ms
+Time: 1.213 ms
 
 ---------------------------------------------------------------------
 SCENARIO C: PARTIAL RECOVERY WITH SAVEPOINT
 ---------------------------------------------------------------------
 BEGIN
-Time: 0.818 ms
-Time: 2.034 ms
+Time: 0.343 ms
 ERROR:  duplicate key value violates unique constraint "booking_pkey"
 DETAIL:  Key (booking_id)=(700004) already exists.
+Time: 1.922 ms
 ERROR:  current transaction is aborted, commands ignored until end of transaction block
-Time: 0.544 ms
-ERROR:  current transaction is aborted, commands ignored until end of transaction block
-Time: 0.816 ms
+Time: 0.658 ms
+Time: 1.050 ms
 >> Core room booking succeeded. Establishing SAVEPOINT sp_core_booking...
-Time: 0.643 ms
 ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+Time: 0.624 ms
 >> Attempting to add optional service with invalid check constraint...
-Time: 0.863 ms
+Time: 0.814 ms
 ERROR:  current transaction is aborted, commands ignored until end of transaction block
-ERROR:  current transaction is aborted, commands ignored until end of transaction block
-Time: 1.614 ms
+Time: 0.411 ms
 >> Airport shuttle driver unavailable. Rolling back to SAVEPOINT sp_core_booking...
-ERROR:  savepoint "sp_core_booking" does not exist
-Time: 2.868 ms
 ERROR:  current transaction is aborted, commands ignored until end of transaction block
-Time: 1.119 ms
+Time: 1.114 ms
+ERROR:  savepoint "sp_core_booking" does not exist
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+Time: 0.444 ms
 >> Committing core booking...
 ROLLBACK
-Time: 0.820 ms
+Time: 0.685 ms
 
 --- VERIFYING SCENARIO C: CORE BOOKING COMMITTED, ADD-ON ROLLED BACK ---
  booking_id |    booking_ref    |  status   | total_amount | room_id | check_in_date | check_out_date | amount_paid | transaction_ref 
@@ -92,4 +92,4 @@ Time: 0.820 ms
      700004 | TX-SAVEPOINT-CORE | confirmed |    180000.00 |       3 | 2027-05-10    | 2027-05-14     |   180000.00 | TXN-CORE-PAID
 (1 row)
 
-Time: 6.015 ms
+Time: 5.541 ms
