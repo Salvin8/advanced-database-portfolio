@@ -1,0 +1,163 @@
+Timing is on.
+DROP TABLE
+Time: 568.630 ms
+CREATE TABLE
+Time: 46.361 ms
+CREATE TABLE
+Time: 392.557 ms
+CREATE TABLE
+Time: 2285.642 ms (00:02.286)
+CREATE TABLE
+Time: 70.937 ms
+CREATE TABLE
+Time: 58.700 ms
+CREATE TABLE
+Time: 67.173 ms
+CREATE TABLE
+Time: 45.665 ms
+CREATE INDEX
+Time: 14.308 ms
+CREATE INDEX
+Time: 11.426 ms
+CREATE INDEX
+Time: 12.932 ms
+CREATE INDEX
+Time: 9.836 ms
+CREATE INDEX
+Time: 9.983 ms
+CREATE INDEX
+Time: 10.071 ms
+CREATE INDEX
+Time: 14.164 ms
+CREATE INDEX
+Time: 9.168 ms
+CREATE INDEX
+Time: 13.126 ms
+CREATE INDEX
+Time: 7.467 ms
+CREATE INDEX
+Time: 8.103 ms
+CREATE INDEX
+Time: 9.559 ms
+=== Migrating data from booking into booking_partitioned ===
+INSERT 0 500008
+Time: 12578.073 ms (00:12.578)
+ANALYZE
+Time: 5206.008 ms (00:05.206)
+=== Row Counts Across Geographic Partitions ===
+   partition_name    |        property_description         | partition_data_size | partition_total_size | estimated_rows 
+---------------------+-------------------------------------+---------------------+----------------------+----------------
+ booking_part_abuja  | Hotel 1 - Abuja (Capital)           | 8904 kB             | 13 MB                |          83406
+ booking_part_enugu  | Hotel 5 - Enugu (Coal City)         | 8888 kB             | 13 MB                |          83300
+ booking_part_ibadan | Hotel 6 - Ibadan (Pacesetter)       | 8888 kB             | 13 MB                |          83300
+ booking_part_kano   | Hotel 4 - Kano (Northern Commerce)  | 8888 kB             | 13 MB                |          83300
+ booking_part_lagos  | Hotel 2 - Lagos (Commercial Hub)    | 8904 kB             | 13 MB                |          83401
+ booking_part_ph     | Hotel 3 - Port Harcourt (Oil & Gas) | 8888 kB             | 13 MB                |          83301
+(6 rows)
+
+Time: 60.194 ms
+=== TEST 1: Single-Partition Query with Static Partition Pruning ===
+Query filter: WHERE hotel_id = 2 (Lagos property only)
+Expected: Planner prunes Abuja, Port Harcourt, Kano, Enugu, and Ibadan entirely.
+                                                                    QUERY PLAN                                                                    
+--------------------------------------------------------------------------------------------------------------------------------------------------
+ Aggregate  (cost=2572.52..2572.53 rows=1 width=72) (actual time=99.257..99.259 rows=1 loops=1)
+   Buffers: shared hit=1113
+   ->  Seq Scan on booking_part_lagos booking_partitioned  (cost=0.00..2155.51 rows=83401 width=6) (actual time=0.027..71.087 rows=83401 loops=1)
+         Filter: (hotel_id = 2)
+         Buffers: shared hit=1113
+ Planning:
+   Buffers: shared hit=53
+ Planning Time: 15.962 ms
+ Execution Time: 102.877 ms
+(9 rows)
+
+Time: 183.580 ms
+=== TEST 2: Multi-Partition Query Touching Two Properties ===
+Query filter: WHERE hotel_id IN (1, 2) (Abuja and Lagos only)
+Expected: Planner scans ONLY booking_part_abuja and booking_part_lagos, pruning remaining 4.
+                                                                                      QUERY PLAN                                                                                       
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Finalize GroupAggregate  (cost=5321.47..5323.07 rows=6 width=44) (actual time=317.201..325.692 rows=2 loops=1)
+   Group Key: booking_partitioned.hotel_id
+   Buffers: shared hit=2242
+   ->  Gather Merge  (cost=5321.47..5322.87 rows=12 width=44) (actual time=317.164..325.646 rows=4 loops=1)
+         Workers Planned: 2
+         Workers Launched: 2
+         Buffers: shared hit=2242
+         ->  Sort  (cost=4321.45..4321.46 rows=6 width=44) (actual time=255.687..255.689 rows=1 loops=3)
+               Sort Key: booking_partitioned.hotel_id
+               Sort Method: quicksort  Memory: 25kB
+               Buffers: shared hit=2242
+               Worker 0:  Sort Method: quicksort  Memory: 25kB
+               Worker 1:  Sort Method: quicksort  Memory: 25kB
+               ->  Partial HashAggregate  (cost=4321.30..4321.37 rows=6 width=44) (actual time=254.348..254.350 rows=1 loops=3)
+                     Group Key: booking_partitioned.hotel_id
+                     Batches: 1  Memory Usage: 24kB
+                     Buffers: shared hit=2226
+                     Worker 0:  Batches: 1  Memory Usage: 24kB
+                     Worker 1:  Batches: 1  Memory Usage: 24kB
+                     ->  Parallel Append  (cost=0.00..3800.03 rows=69502 width=10) (actual time=0.026..161.330 rows=55602 loops=3)
+                           Buffers: shared hit=2226
+                           ->  Parallel Seq Scan on booking_part_abuja booking_partitioned_1  (cost=0.00..1726.28 rows=49062 width=10) (actual time=0.025..143.666 rows=83406 loops=1)
+                                 Filter: (hotel_id = ANY ('{1,2}'::integer[]))
+                                 Buffers: shared hit=1113
+                           ->  Parallel Seq Scan on booking_part_lagos booking_partitioned_2  (cost=0.00..1726.24 rows=49059 width=10) (actual time=0.020..87.406 rows=27800 loops=3)
+                                 Filter: (hotel_id = ANY ('{1,2}'::integer[]))
+                                 Buffers: shared hit=1113
+ Planning:
+   Buffers: shared hit=30
+ Planning Time: 0.812 ms
+ Execution Time: 332.588 ms
+(31 rows)
+
+Time: 335.849 ms
+=== TEST 3: Scatter-Gather Cross-Partition Analytics ===
+Query filter: None (Global query across all hotels)
+Expected: Planner fans out (Append) across all 6 partitions and aggregates results.
+                                                                                          QUERY PLAN                                                                                          
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=13217.29..13217.30 rows=6 width=76) (actual time=1096.730..1120.723 rows=6 loops=1)
+   Sort Key: (sum(booking_partitioned.total_amount)) DESC
+   Sort Method: quicksort  Memory: 25kB
+   Buffers: shared hit=6686
+   ->  Finalize GroupAggregate  (cost=13215.59..13217.21 rows=6 width=76) (actual time=1092.828..1116.850 rows=6 loops=1)
+         Group Key: booking_partitioned.hotel_id
+         Buffers: shared hit=6686
+         ->  Gather Merge  (cost=13215.59..13216.99 rows=12 width=76) (actual time=1092.768..1116.757 rows=9 loops=1)
+               Workers Planned: 2
+               Workers Launched: 2
+               Buffers: shared hit=6686
+               ->  Sort  (cost=12215.56..12215.58 rows=6 width=76) (actual time=859.793..859.798 rows=3 loops=3)
+                     Sort Key: booking_partitioned.hotel_id
+                     Sort Method: quicksort  Memory: 25kB
+                     Buffers: shared hit=6686
+                     Worker 0:  Sort Method: quicksort  Memory: 25kB
+                     Worker 1:  Sort Method: quicksort  Memory: 25kB
+                     ->  Partial HashAggregate  (cost=12215.41..12215.49 rows=6 width=76) (actual time=858.150..858.157 rows=3 loops=3)
+                           Group Key: booking_partitioned.hotel_id
+                           Batches: 1  Memory Usage: 24kB
+                           Buffers: shared hit=6670
+                           Worker 0:  Batches: 1  Memory Usage: 24kB
+                           Worker 1:  Batches: 1  Memory Usage: 24kB
+                           ->  Parallel Append  (cost=0.00..10652.90 rows=208335 width=10) (actual time=0.233..502.094 rows=166669 loops=3)
+                                 Buffers: shared hit=6670
+                                 ->  Parallel Seq Scan on booking_part_abuja booking_partitioned_1  (cost=0.00..1603.62 rows=49062 width=10) (actual time=0.014..243.422 rows=83406 loops=1)
+                                       Buffers: shared hit=1113
+                                 ->  Parallel Seq Scan on booking_part_lagos booking_partitioned_2  (cost=0.00..1603.59 rows=49059 width=10) (actual time=0.010..177.161 rows=83401 loops=1)
+                                       Buffers: shared hit=1113
+                                 ->  Parallel Seq Scan on booking_part_ph booking_partitioned_3  (cost=0.00..1601.01 rows=49001 width=10) (actual time=0.668..125.712 rows=83301 loops=1)
+                                       Buffers: shared hit=1111
+                                 ->  Parallel Seq Scan on booking_part_kano booking_partitioned_4  (cost=0.00..1601.00 rows=49000 width=10) (actual time=0.039..41.741 rows=27767 loops=3)
+                                       Buffers: shared hit=1111
+                                 ->  Parallel Seq Scan on booking_part_enugu booking_partitioned_5  (cost=0.00..1601.00 rows=49000 width=10) (actual time=0.010..85.989 rows=41650 loops=2)
+                                       Buffers: shared hit=1111
+                                 ->  Parallel Seq Scan on booking_part_ibadan booking_partitioned_6  (cost=0.00..1601.00 rows=49000 width=10) (actual time=0.013..382.635 rows=83300 loops=1)
+                                       Buffers: shared hit=1111
+ Planning:
+   Buffers: shared hit=56
+ Planning Time: 2.888 ms
+ Execution Time: 1121.184 ms
+(41 rows)
+
+Time: 1131.851 ms (00:01.132)

@@ -1,6 +1,6 @@
 ================================================================================
 SAVANNAH CREST HOTELS - MONGODB 7.0 DOCUMENT OPERATIONS & AGGREGATIONS
-Timestamp: 2026-11-15T09:48:32.770580
+Timestamp: 2026-11-15T09:57:25.289830
 Target Database: savannah_crest_nosql at localhost:27017
 ================================================================================
 
@@ -31,7 +31,7 @@ STEP 3: MONGODB CRUD DEMONSTRATIONS
 ================================================================================
 
 [3.1 CREATE: insert_one]
-✓ Inserted walk-in guest with ObjectId: 6af98002512d23728fdb8003
+✓ Inserted walk-in guest with ObjectId: 6af98208a6e4fd948cb06785
 
 [3.2 READ: find with filters - Nigerian Platinum Guests]
   - Folake Okoro (folake.okoro4833@mail.ng) | Spent: ₦7,258,250.00
@@ -69,8 +69,8 @@ STEP 3: MONGODB CRUD DEMONSTRATIONS
     "first_visit": "2026-11-20",
     "last_visit": "2026-12-24"
   },
-  "created_at": "2026-11-15T09:48:50.308676",
-  "updated_at": "2026-11-15T09:48:50.422723"
+  "created_at": "2026-11-15T09:57:28.692078",
+  "updated_at": "2026-11-15T09:57:28.727670"
 }
 
 [3.5 DELETE: delete_one - Removing walk-in demo guest]
@@ -130,7 +130,7 @@ Benchmark Query: db.guest_profiles.find({ email: 'fatima.eze6331@mail.ng' })
 
 [A] WITH INDEX (idx_email):
   Stage: FETCH
-  Execution Time: 1 ms
+  Execution Time: 0 ms
   Total Keys Examined: 1
   Total Docs Examined: 1
   Docs Returned: 1
@@ -152,7 +152,7 @@ Metric                    |  Without Index (COLLSCAN) |    With Index (IXSCAN)
 Winning Plan Stage        |                  COLLSCAN |                  FETCH
 Total Docs Examined       |                       200 |                      1
 Total Keys Examined       |                         0 |                      1
-Execution Time (ms)       |                         0 |                      1
+Execution Time (ms)       |                         0 |                      0
 
 ================================================================================
 STEP 6: COLLECTION STORAGE & DOCUMENT HEALTH SUMMARY

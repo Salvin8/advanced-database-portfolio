@@ -1,6 +1,6 @@
 ================================================================================
 SAVANNAH CREST HOTELS - REDIS 7.4 IN-MEMORY DATA STRUCTURES & CACHING
-Timestamp: 2026-11-15T09:48:53.589508
+Timestamp: 2026-11-15T09:57:30.113761
 Redis Target: localhost:6379
 PostgreSQL Target: localhost:5432/savannah_crest
 ================================================================================
@@ -34,9 +34,9 @@ STEP 1: DEMONSTRATING FIVE CORE REDIS DATA STRUCTURES
     * Ref: SC-2026-000003 | Room: 203 | Amount: ₦135,000.00
 
 [1.4 Sets: Available Room Pools & Set Operations]
-  SADD pool:available_rooms:hotel:1 (Abuja) -> {'103', '106', '102', '104', '101', '105'}
-  SADD pool:available_rooms:hotel:2 (Lagos) -> {'108', '109', '107', '104', '105'}
-  SREM 103 from Hotel 1 (Booked) -> Remaining: {'106', '102', '104', '101', '105'}
+  SADD pool:available_rooms:hotel:1 (Abuja) -> {'105', '101', '106', '102', '103', '104'}
+  SADD pool:available_rooms:hotel:2 (Lagos) -> {'108', '109', '107', '105', '104'}
+  SREM 103 from Hotel 1 (Booked) -> Remaining: {'105', '106', '102', '101', '104'}
   SISMEMBER 103: 0
   SISMEMBER 102: 1
   SINTER (Common suite numbers across properties): {'105', '104'}
@@ -54,9 +54,9 @@ STEP 1: DEMONSTRATING FIVE CORE REDIS DATA STRUCTURES
 STEP 2: CACHE-ASIDE (LAZY LOADING) PATTERN IMPLEMENTATION
 ================================================================================
 Testing Cache-Aside with Hotel 1 Availability Search (2026-12-01 to 2026-12-05)...
-  Call 1 (Cold Start): [MISS] -> 20 rooms returned | Latency: 91.694 ms (PostgreSQL)
-  Call 2 (Cached Hit): [HIT]  -> 20 rooms returned | Latency: 2.313 ms (Redis)
-  ⚡ Performance Differential: 39.6x Speedup via Redis in-memory lookup
+  Call 1 (Cold Start): [MISS] -> 20 rooms returned | Latency: 44.282 ms (PostgreSQL)
+  Call 2 (Cached Hit): [HIT]  -> 20 rooms returned | Latency: 2.491 ms (Redis)
+  ⚡ Performance Differential: 17.8x Speedup via Redis in-memory lookup
 
 ================================================================================
 STEP 3: CACHE INVALIDATION STRATEGIES
@@ -77,7 +77,7 @@ STEP 3: CACHE INVALIDATION STRATEGIES
 [3.3 Write-Through Strategy Simulation]
   Step 1: Write committed to PostgreSQL primary storage.
   Step 2: Simultaneously updating Redis cache...
-  ✓ Redis cache immediately populated with fresh record: {"guest_id": 501, "phone": "+2348039998877", "email": "updated.guest501@mail.ng", "synced_at": "2026-11-15T09:48:56.176348"}
+  ✓ Redis cache immediately populated with fresh record: {"guest_id": 501, "phone": "+2348039998877", "email": "updated.guest501@mail.ng", "synced_at": "2026-11-15T09:57:32.570948"}
 
 ================================================================================
 STEP 4: EMPIRICAL LATENCY & THROUGHPUT BENCHMARK (100 ITERATIONS)
@@ -86,10 +86,10 @@ Running 100 iterations of guest profile lookup...
 
 Metric                    |    PostgreSQL (Direct) |     Redis (Cached) |    Improvement
 -------------------------------------------------------------------------------------
-Average Latency           |               3.261 ms |           2.420 ms |          1.3x
-Median Latency (p50)      |               2.078 ms |           1.488 ms |          1.4x
-95th Percentile (p95)     |              15.254 ms |           7.801 ms |          2.0x
-Estimated Throughput      |           306.6 ops/s |       413.2 ops/s |          1.3x
+Average Latency           |               1.779 ms |           1.451 ms |          1.2x
+Median Latency (p50)      |               1.685 ms |           1.322 ms |          1.3x
+95th Percentile (p95)     |               3.036 ms |           2.162 ms |          1.4x
+Estimated Throughput      |           562.3 ops/s |       689.1 ops/s |          1.2x
 
 ================================================================================
 STEP 5: REDIS KEYSPACE AUDIT & MEMORY HEALTH
@@ -97,7 +97,7 @@ STEP 5: REDIS KEYSPACE AUDIT & MEMORY HEALTH
   Total Keys Created in Redis: 9
   Active Key Samples:
     - [string] bench:guest:4520                       (TTL: Persistent)
-    - [string] cache:guest:profile:501                (TTL: 3599s)
+    - [string] cache:guest:profile:501                (TTL: 3600s)
     - [string] hotel:1:available_rooms                (TTL: Persistent)
     - [list  ] hotel:1:recent_bookings                (TTL: Persistent)
     - [zset  ] leaderboard:guest_spend                (TTL: Persistent)

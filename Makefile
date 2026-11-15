@@ -33,7 +33,7 @@ logs:
 
 # --- Portfolio targets ---
 
-.PHONY: p1 p1-test p2 p2-seed p2-baseline p2-optimise p2-benchmark p3 p3-acid p3-isolation p3-concurrency p3-deadlock p4 p4-mongo p4-redis p5
+.PHONY: p1 p1-test p2 p2-seed p2-baseline p2-optimise p2-benchmark p3 p3-acid p3-isolation p3-concurrency p3-deadlock p4 p4-mongo p4-redis p5 p5-partitioning p5-saga
 
 p1:
 	@echo "Portfolio 1: Applying schema to clean database..."
@@ -108,6 +108,17 @@ p4-redis:
 	@echo "Portfolio 4: Running Redis in-memory data structures, cache-aside, and benchmarks..."
 	.venv/bin/python3 portfolio-4-nosql/scripts/redis_operations.py
 
-p5:
-	@echo "Portfolio 5: Distributed and Cloud Database Exercise"
-	@echo "TODO: implement"
+p5: p5-partitioning p5-saga
+	@echo "Portfolio 5: Distributed and Cloud Database Exercise full suite complete."
+
+p5-partitioning:
+	@echo "Portfolio 5: Applying declarative table partitioning and validating partition pruning..."
+	docker compose exec -T postgres psql -U $(POSTGRES_USER) -d $(POSTGRES_DB) \
+		< portfolio-5-distributed-cloud/sql/01_partitioning.sql \
+		> portfolio-5-distributed-cloud/evidence/partitioning_output.txt 2>&1
+	@echo "Portfolio 5: Partitioning evidence written to portfolio-5-distributed-cloud/evidence/partitioning_output.txt"
+
+p5-saga:
+	@echo "Portfolio 5: Executing Distributed Saga Pattern orchestrator simulation..."
+	.venv/bin/python3 portfolio-5-distributed-cloud/scripts/saga_orchestrator.py
+	@echo "Portfolio 5: Saga orchestration evidence written to portfolio-5-distributed-cloud/evidence/saga-orchestrator-output.txt"
