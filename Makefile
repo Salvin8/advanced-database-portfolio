@@ -33,7 +33,7 @@ logs:
 
 # --- Portfolio targets ---
 
-.PHONY: p1 p1-test p2 p2-seed p2-baseline p2-optimise p2-benchmark p3 p3-acid p3-isolation p3-concurrency p3-deadlock p4 p5
+.PHONY: p1 p1-test p2 p2-seed p2-baseline p2-optimise p2-benchmark p3 p3-acid p3-isolation p3-concurrency p3-deadlock p4 p4-mongo p4-redis p5
 
 p1:
 	@echo "Portfolio 1: Applying schema to clean database..."
@@ -97,9 +97,12 @@ p3-deadlock:
 	@echo "Portfolio 3: Running deadlock reproduction and resolution harness..."
 	.venv/bin/python3 portfolio-3-transactions-concurrency/scripts/run_deadlock.py
 
-p4:
-	@echo "Portfolio 4: NoSQL and Advanced Data Models"
-	@echo "TODO: implement"
+p4: p4-mongo p4-redis
+	@echo "Portfolio 4: NoSQL and Advanced Data Models full suite complete."
+
+p4-mongo:
+	@echo "Portfolio 4: Running MongoDB document ETL, CRUD, aggregations, and index benchmarks..."
+	.venv/bin/python3 portfolio-4-nosql/scripts/mongo_operations.py
 
 p5:
 	@echo "Portfolio 5: Distributed and Cloud Database Exercise"

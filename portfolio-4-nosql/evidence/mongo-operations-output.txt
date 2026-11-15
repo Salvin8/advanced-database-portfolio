@@ -1,0 +1,170 @@
+================================================================================
+SAVANNAH CREST HOTELS - MONGODB 7.0 DOCUMENT OPERATIONS & AGGREGATIONS
+Timestamp: 2026-11-15T09:41:08.053171
+Target Database: savannah_crest_nosql at localhost:27017
+================================================================================
+
+================================================================================
+STEP 1: ETL - EXTRACTING RELATIONAL DATA FROM POSTGRESQL
+================================================================================
+✓ Successfully connected to PostgreSQL (savannah_crest)
+✓ Extracted top 200 guests by booking frequency.
+✓ Extracted 10257 booking-room records.
+✓ Extracted 10676 payment records.
+✓ Transformed 200 complete guest document profiles.
+
+================================================================================
+STEP 2: INITIALIZING MONGODB 7.0 COLLECTION & INDEXES
+================================================================================
+✓ Connected to MongoDB (savannah_crest_nosql)
+✓ Bulk inserted 200 documents into 'guest_profiles'.
+✓ Active MongoDB Indexes:
+  - _id_: keys=[('_id', 1)], unique=False
+  - idx_guest_id: keys=[('guest_id', 1)], unique=True
+  - idx_email: keys=[('email', 1)], unique=True
+  - idx_bookings_hotel_name: keys=[('bookings.hotel_name', 1)], unique=False
+  - idx_stats_total_spent: keys=[('stats.total_spent', -1)], unique=False
+  - idx_nat_tier: keys=[('nationality', 1), ('loyalty_tier', 1)], unique=False
+
+================================================================================
+STEP 3: MONGODB CRUD DEMONSTRATIONS
+================================================================================
+
+[3.1 CREATE: insert_one]
+✓ Inserted walk-in guest with ObjectId: 6af97e38313c946e91ee3fdd
+
+[3.2 READ: find with filters - Nigerian Platinum Guests]
+  - Folake Okoro (folake.okoro4833@mail.ng) | Spent: ₦7,258,250.00
+  - Khadijah Gidado (khadijah.gidado6418@mail.ng) | Spent: ₦6,392,500.00
+  - Kehinde Mohammed (kehinde.mohammed4322@mail.ng) | Spent: ₦5,905,250.00
+
+[3.2 READ: find nested array filter - Guests who stayed in Kano]
+  - Folake Okoro | Tier: Platinum | Stays: 65
+  - Khadijah Gidado | Tier: Platinum | Stays: 62
+  - Kehinde Mohammed | Tier: Platinum | Stays: 59
+
+[3.3 READ: Projection, Sort, Limit - Top 5 Spenders Chain-Wide]
+  1. Hadiza Okoro (ID: 1235) - Tier: Platinum | Spent: ₦7,934,250.00 | Pref: Savannah Crest Victoria Island
+  2. Bilikisu Gidado (ID: 4518) - Tier: Platinum | Spent: ₦7,761,500.00 | Pref: Savannah Crest Victoria Island
+  3. Tunde Igwe (ID: 4520) - Tier: Platinum | Spent: ₦7,675,250.00 | Pref: Savannah Crest Independence Layout
+  4. Joy Balogun (ID: 847) - Tier: Platinum | Spent: ₦7,609,250.00 | Pref: Savannah Crest Bodija
+  5. Mohammed Fashola (ID: 3874) - Tier: Platinum | Spent: ₦7,548,250.00 | Pref: Savannah Crest Victoria Island
+
+[3.4 UPDATE: update_one with $push - Adding new booking to guest 999999]
+✓ Matched: 1, Modified: 1
+  Updated Guest State: {
+  "guest_id": 999999,
+  "first_name": "Tariq",
+  "last_name": "Mansoor",
+  "email": "tariq.mansoor.demo@mail.ng",
+  "phone": "+2348099887766",
+  "nationality": "Nigerian",
+  "loyalty_tier": "Platinum",
+  "stats": {
+    "total_bookings": 2,
+    "total_spent": 975000.0,
+    "avg_stay_nights": 3.0,
+    "preferred_hotel": "Savannah Crest Victoria Island",
+    "preferred_room_type": "Executive Suite",
+    "first_visit": "2026-11-20",
+    "last_visit": "2026-12-24"
+  },
+  "created_at": "2026-11-15T09:41:12.211340",
+  "updated_at": "2026-11-15T09:41:12.251878"
+}
+
+[3.5 DELETE: delete_one - Removing walk-in demo guest]
+✓ Deleted documents: 1
+
+================================================================================
+STEP 4: ADVANCED MONGODB AGGREGATION PIPELINES
+================================================================================
+
+--- Pipeline 1: Financial Analytics by City ($unwind -> $group -> $sort) ---
+City               |   Bookings |  Total Revenue (NGN) |  Avg Value (NGN)
+------------------------------------------------------------------------
+Lagos              |      1,623 | ₦    222,896,250.00 | ₦    137,335.95
+Abuja              |      1,635 | ₦    214,531,250.00 | ₦    131,211.77
+Enugu              |      1,524 | ₦    168,538,000.00 | ₦    110,589.24
+Kano               |      1,548 | ₦    164,695,000.00 | ₦    106,392.12
+Ibadan             |      1,551 | ₦    163,639,000.00 | ₦    105,505.48
+Port Harcourt      |      1,544 | ₦    161,718,000.00 | ₦    104,739.64
+
+--- Pipeline 2: Room Type Popularity ($unwind -> $group -> $project -> $sort) ---
+Room Type              |   Bookings |  Total Revenue (NGN) |  Avg Booking Value
+------------------------------------------------------------------------------
+Standard Room          |      5,103 | ₦    333,644,000.00 | ₦       65,381.93
+Deluxe Room            |      3,111 | ₦    330,682,500.00 | ₦      106,294.60
+Executive Suite        |      1,493 | ₦    297,691,250.00 | ₦      199,391.33
+Presidential Suite     |        550 | ₦    225,540,000.00 | ₦      410,072.73
+
+--- Pipeline 3: Guest Loyalty Tier Value Distribution ---
+Tier         |   Guests |    Total Spend (NGN) |      Avg LTV (NGN) |   Avg Bookings
+--------------------------------------------------------------------------------
+Platinum     |      200 | ₦  1,096,017,500.00 | ₦    5,480,087.50 |           51.3
+
+--- Pipeline 4: Historical Yearly Trends ($unwind -> $project -> $group -> $sort) ---
+Year     |   Total Bookings |    Total Revenue (NGN) |   Cancellations
+--------------------------------------------------------------------
+2020     |            1,628 | ₦      187,982,750.00 |             123
+2021     |            1,703 | ₦      199,419,000.00 |             121
+2022     |            1,589 | ₦      179,891,500.00 |             131
+2023     |            1,646 | ₦      193,560,750.00 |             141
+2024     |            1,643 | ₦      192,232,000.00 |             139
+2025     |            1,585 | ₦      180,302,250.00 |             145
+2026     |              461 | ₦       53,809,500.00 |              32
+2027     |                2 | ₦          360,000.00 |               0
+
+--- Pipeline 5: Multi-level Payment Method Breakdown ---
+Method           |    Txn Count |    Total Settled (NGN) |    Failed Txns
+----------------------------------------------------------------------
+card             |        6,461 | ₦      646,618,750.00 |            413
+bank_transfer    |        2,369 | ₦      281,270,500.00 |              0
+mobile_money     |        1,388 | ₦      159,060,250.00 |              0
+cash             |          458 | ₦       51,432,250.00 |              0
+
+================================================================================
+STEP 5: QUERY PLAN OPTIMIZATION - COLLSCAN VS IXSCAN (explain)
+================================================================================
+Benchmark Query: db.guest_profiles.find({ email: 'fatima.eze6331@mail.ng' })
+
+[A] WITH INDEX (idx_email):
+  Stage: FETCH
+  Execution Time: 0 ms
+  Total Keys Examined: 1
+  Total Docs Examined: 1
+  Docs Returned: 1
+
+✓ Dropped index 'idx_email' for empirical comparison.
+
+[B] WITHOUT INDEX (Collection Scan):
+  Stage: COLLSCAN
+  Execution Time: 2 ms
+  Total Keys Examined: 0
+  Total Docs Examined: 200
+  Docs Returned: 1
+
+✓ Restored unique index 'idx_email'.
+
+--- Empirical Performance Comparison ---
+Metric                    |  Without Index (COLLSCAN) |    With Index (IXSCAN)
+------------------------------------------------------------------------------
+Winning Plan Stage        |                  COLLSCAN |                  FETCH
+Total Docs Examined       |                       200 |                      1
+Total Keys Examined       |                         0 |                      1
+Execution Time (ms)       |                         2 |                      0
+
+================================================================================
+STEP 6: COLLECTION STORAGE & DOCUMENT HEALTH SUMMARY
+================================================================================
+  Total Documents: 200
+  Total Data Size: 4257.31 KB
+  Avg Document Size: 21797.00 bytes
+  Total Storage Size: 4.00 KB
+  Total Index Size: 112.00 KB
+  Number of Indexes: 6
+
+==================================================================
+MongoDB operations completed successfully.
+Output recorded to: portfolio-4-nosql/evidence/mongo-operations-output.txt
+==================================================================
