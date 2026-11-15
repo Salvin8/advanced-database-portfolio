@@ -1,0 +1,68 @@
+=====================================================================
+PORTFOLIO 3: MULTI-SESSION ISOLATION LEVELS & ANOMALY HARNESS
+Database: savannah_crest at localhost:5432
+=====================================================================
+
+======================================================================
+EXPERIMENT 1: READ UNCOMMITTED & DIRTY READ VERIFICATION
+ANSI SQL Definition: Reading uncommitted changes made by another transaction.
+PostgreSQL Truth: PostgreSQL does NOT allow dirty reads at ANY isolation level.
+======================================================================
+
+  [Session A @ READ UNCOMMITTED] Initial floor for Room 1 = 1
+  [Session B] Executed uncommitted UPDATE room SET floor = 99 WHERE room_id = 1
+  [Session A @ READ UNCOMMITTED] Re-reading while Session B is uncommitted = 1
+  -> RESULT: Dirty read PREVENTED! Session A cannot see Session B uncommitted update.
+  [Session B] Rolled back uncommitted changes.
+
+======================================================================
+EXPERIMENT 2: READ COMMITTED & NON-REPEATABLE READ ANOMALY
+Definition: Same query in open transaction sees different data after external commit.
+======================================================================
+
+  [Session A @ READ COMMITTED] Read 1: Rate = ₦35,000.00
+  [Session B] Updated Rate to ₦48,000.00 and COMMITTED.
+  [Session A @ READ COMMITTED] Read 2 (same transaction): Rate = ₦48,000.00
+  -> ANOMALY CONFIRMED: Non-Repeatable Read occurred! (Value changed mid-transaction)
+
+======================================================================
+EXPERIMENT 3: REPEATABLE READ (SNAPSHOT ISOLATION & UPDATE CONFLICT)
+======================================================================
+
+  [Session A @ REPEATABLE READ] Read 1: Rate = ₦40,000.00
+  [Session B] Concurrently updated rate to ₦52,000.00 and COMMITTED.
+  [Session A @ REPEATABLE READ] Read 2: Rate = ₦40,000.00
+  -> Non-repeatable read PREVENTED by Snapshot Isolation!
+  [Session A @ REPEATABLE READ] Attempting UPDATE on row modified by Session B...
+  -> SUCCESS: Caught expected SQLSTATE 40001:
+     could not serialize access due to concurrent update
+
+======================================================================
+EXPERIMENT 4: SERIALIZABLE SNAPSHOT ISOLATION & AUTOMATED RETRY LOOP
+Business Rule: At least 1 emergency suite on floor 5 must remain active.
+Anomaly: Write Skew (both sessions check count=2 and concurrently deactivate one).
+======================================================================
+
+  [Agent B @ SERIALIZABLE] (Attempt 1) Starting transaction...
+  [Agent A @ SERIALIZABLE] Checked emergency room pool: 2 active.
+  [Agent B @ SERIALIZABLE] Checked emergency room pool: 2 active.
+  [Agent A @ SERIALIZABLE] Reserved room 81.
+  [Agent A @ SERIALIZABLE] COMMITTED successfully.
+  [Agent B @ SERIALIZABLE] Attempting to reserve room 82 and COMMIT...
+  -> SUCCESS: Caught expected SQLSTATE 40001 (SSI Serialization Failure):
+     could not serialize access due to read/write dependencies among transactions
+DETAIL:  Reason code: Canceled on identification as a pivot, during write.
+HINT:  The transaction might succeed if retried.
+  -> [Agent B] Initiating automated RETRY loop (Attempt 2)...
+  [Agent B @ SERIALIZABLE - RETRY] Re-checked emergency pool: 1 active.
+  -> RETRY DECISION: Only 1 room remaining! Invariant requires >= 1.
+  -> Reservation rejected gracefully without violating the business invariant!
+
+--- FINAL VERIFICATION: POOL STATE PRESERVED ---
+  Room 81 (501): is_active = False
+  Room 82 (502): is_active = True
+  Total Emergency Rooms Active: 1 (Invariant Maintained >= 1: PASS)
+
+=====================================================================
+ALL ISOLATION TESTS COMPLETE. Evidence recorded to portfolio-3-transactions-concurrency/evidence/isolation_levels_output.txt
+=====================================================================

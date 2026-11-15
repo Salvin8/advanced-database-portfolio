@@ -33,7 +33,7 @@ logs:
 
 # --- Portfolio targets ---
 
-.PHONY: p1 p1-test p2 p2-seed p2-baseline p2-optimise p2-benchmark p3 p3-acid p4 p5
+.PHONY: p1 p1-test p2 p2-seed p2-baseline p2-optimise p2-benchmark p3 p3-acid p3-isolation p4 p5
 
 p1:
 	@echo "Portfolio 1: Applying schema to clean database..."
@@ -72,7 +72,7 @@ p2-benchmark:
 	@echo "Portfolio 2: Running query benchmarking suite (3-run median)..."
 	.venv/bin/python3 portfolio-2-query-optimisation/scripts/benchmark.py
 
-p3: p3-acid
+p3: p3-acid p3-isolation
 	@echo "Portfolio 3: Transactions and Concurrency milestone executions ready."
 
 p3-acid:
@@ -84,6 +84,10 @@ p3-acid:
 		< portfolio-3-transactions-concurrency/sql/02_rollback_scenarios.sql \
 		> portfolio-3-transactions-concurrency/evidence/02_rollback_scenarios_output.txt 2>&1
 	@echo "Portfolio 3: ACID evidence written to portfolio-3-transactions-concurrency/evidence/"
+
+p3-isolation:
+	@echo "Portfolio 3: Running multi-session isolation levels and anomaly harness..."
+	.venv/bin/python3 portfolio-3-transactions-concurrency/scripts/run_two_sessions.py
 
 p4:
 	@echo "Portfolio 4: NoSQL and Advanced Data Models"
