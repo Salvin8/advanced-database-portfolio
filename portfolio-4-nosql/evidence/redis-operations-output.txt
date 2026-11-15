@@ -1,0 +1,117 @@
+================================================================================
+SAVANNAH CREST HOTELS - REDIS 7.4 IN-MEMORY DATA STRUCTURES & CACHING
+Timestamp: 2026-11-15T09:45:06.487029
+Redis Target: localhost:6379
+PostgreSQL Target: localhost:5432/savannah_crest
+================================================================================
+✓ Connected to Redis successfully.
+✓ Connected to PostgreSQL successfully.
+
+================================================================================
+STEP 1: DEMONSTRATING FIVE CORE REDIS DATA STRUCTURES
+================================================================================
+
+[1.1 Strings: Availability Status & Atomic Counters]
+  SET room:101:available -> 'true' (TTL: 300s)
+  SET hotel:1:available_rooms = 100
+  DECR hotel:1:available_rooms (Room booked) -> Current: 99
+  INCR hotel:1:available_rooms (Booking cancelled) -> Current: 100
+
+[1.2 Hashes: Guest Active Session Store]
+  HSET & HGETALL session:guest:usr_98234a (TTL: 86400s):
+    - guest_id: 4520
+    - first_name: Tunde
+    - last_name: Igwe
+    - role: VIP_Gold
+    - hotel_id: 1
+  HSET update: active_room_assigned -> 305
+
+[1.3 Lists: Live Reservation Event Stream]
+  LPUSH & LTRIM hotel:1:recent_bookings -> Capped Queue Length: 5
+  LRANGE latest 3 events:
+    * Ref: SC-2026-000005 | Room: 205 | Amount: ₦225,000.00
+    * Ref: SC-2026-000004 | Room: 204 | Amount: ₦180,000.00
+    * Ref: SC-2026-000003 | Room: 203 | Amount: ₦135,000.00
+
+[1.4 Sets: Available Room Pools & Set Operations]
+  SADD pool:available_rooms:hotel:1 (Abuja) -> {'102', '103', '105', '104', '106', '101'}
+  SADD pool:available_rooms:hotel:2 (Lagos) -> {'109', '105', '107', '108', '104'}
+  SREM 103 from Hotel 1 (Booked) -> Remaining: {'102', '105', '104', '106', '101'}
+  SISMEMBER 103: 0
+  SISMEMBER 102: 1
+  SINTER (Common suite numbers across properties): {'105', '104'}
+
+[1.5 Sorted Sets (ZSET): Chain-Wide Guest Loyalty Leaderboard]
+  ZREVRANGE Top 5 Spenders (with scores):
+    1. guest:1235   | Lifetime Spend: ₦7,934,250.00
+    2. guest:4518   | Lifetime Spend: ₦7,761,500.00
+    3. guest:4520   | Lifetime Spend: ₦7,675,250.00
+    4. guest:847    | Lifetime Spend: ₦7,609,250.00
+    5. guest:3874   | Lifetime Spend: ₦7,548,250.00
+  ZREVRANK & ZSCORE for guest:4520: Rank #3 with ₦7,675,250.00
+
+================================================================================
+STEP 2: CACHE-ASIDE (LAZY LOADING) PATTERN IMPLEMENTATION
+================================================================================
+Testing Cache-Aside with Hotel 1 Availability Search (2026-12-01 to 2026-12-05)...
+  Call 1 (Cold Start): [MISS] -> 20 rooms returned | Latency: 29.664 ms (PostgreSQL)
+  Call 2 (Cached Hit): [HIT]  -> 20 rooms returned | Latency: 1.550 ms (Redis)
+  ⚡ Performance Differential: 19.1x Speedup via Redis in-memory lookup
+
+================================================================================
+STEP 3: CACHE INVALIDATION STRATEGIES
+================================================================================
+
+[3.1 TTL Expiration Strategy]
+  Set key 'cache:temp:flash_promo_rate' with 2-second TTL.
+  Immediate check: ₦25,000 (TTL: 2s)
+  Sleeping 2.2 seconds for TTL expiration...
+  Check after sleep: None (Key successfully expired automatically)
+
+[3.2 Explicit Invalidation on Booking Event]
+  Pre-condition: cache:avail:h1:2026-12-01:2026-12-05 exists -> 1
+  Action: Guest completes booking on room in this range.
+  Explicit Eviction: cache:avail:h1:2026-12-01:2026-12-05 deleted -> Exists: 0
+  Next read will fetch authoritative availability from PostgreSQL.
+
+[3.3 Write-Through Strategy Simulation]
+  Step 1: Write committed to PostgreSQL primary storage.
+  Step 2: Simultaneously updating Redis cache...
+  ✓ Redis cache immediately populated with fresh record: {"guest_id": 501, "phone": "+2348039998877", "email": "updated.guest501@mail.ng", "synced_at": "2026-11-15T09:45:08.980447"}
+
+================================================================================
+STEP 4: EMPIRICAL LATENCY & THROUGHPUT BENCHMARK (100 ITERATIONS)
+================================================================================
+Running 100 iterations of guest profile lookup...
+
+Metric                    |    PostgreSQL (Direct) |     Redis (Cached) |    Improvement
+-------------------------------------------------------------------------------------
+Average Latency           |               1.663 ms |           1.681 ms |          1.0x
+Median Latency (p50)      |               1.491 ms |           1.431 ms |          1.0x
+95th Percentile (p95)     |               2.572 ms |           2.748 ms |          0.9x
+Estimated Throughput      |           601.5 ops/s |       594.7 ops/s |          1.0x
+
+================================================================================
+STEP 5: REDIS KEYSPACE AUDIT & MEMORY HEALTH
+================================================================================
+  Total Keys Created in Redis: 9
+  Active Key Samples:
+    - [string] bench:guest:4520                       (TTL: Persistent)
+    - [string] cache:guest:profile:501                (TTL: 3600s)
+    - [string] hotel:1:available_rooms                (TTL: Persistent)
+    - [list  ] hotel:1:recent_bookings                (TTL: Persistent)
+    - [zset  ] leaderboard:guest_spend                (TTL: Persistent)
+    - [set   ] pool:available_rooms:hotel:1           (TTL: Persistent)
+    - [set   ] pool:available_rooms:hotel:2           (TTL: Persistent)
+    - [string] room:101:available                     (TTL: 297s)
+    - [hash  ] session:guest:usr_98234a               (TTL: 86397s)
+
+  Redis Memory Footprint:
+    - Used Memory: 1.64M
+    - Peak Memory: 1.68M
+    - Memory Fragmentation Ratio: 8.25
+
+==================================================================
+Redis operations & benchmarking completed successfully.
+Evidence logged to: portfolio-4-nosql/evidence/redis-operations-output.txt
+==================================================================

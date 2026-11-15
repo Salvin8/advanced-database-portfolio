@@ -104,6 +104,10 @@ p4-mongo:
 	@echo "Portfolio 4: Running MongoDB document ETL, CRUD, aggregations, and index benchmarks..."
 	.venv/bin/python3 portfolio-4-nosql/scripts/mongo_operations.py
 
+p4-redis:
+	@echo "Portfolio 4: Running Redis in-memory data structures, cache-aside, and benchmarks..."
+	.venv/bin/python3 portfolio-4-nosql/scripts/redis_operations.py
+
 p5:
 	@echo "Portfolio 5: Distributed and Cloud Database Exercise"
 	@echo "TODO: implement"
