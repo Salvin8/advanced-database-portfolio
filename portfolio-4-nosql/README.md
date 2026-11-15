@@ -2,7 +2,7 @@
 
 **Coursework:** Advanced Database Systems (MIT 8103)  
 **System:** Savannah Crest Hotels Management System  
-**Author:** Salvin Okezua  
+**Author:** Tobias Salvin  
 **Technologies:** MongoDB 7.0, Redis 7.4, PostgreSQL 16, Python 3.12 (psycopg, pymongo, redis)
 
 ---
@@ -21,7 +21,7 @@ Portfolio 4 extends the Savannah Crest Hotels database architecture beyond pure 
 
 ```
 portfolio-4-nosql/
-├── README.md                      # Comprehensive Portfolio 4 documentation & viva guide
+├── README.md                      # Comprehensive Portfolio 4 documentation
 ├── docs/
 │   ├── document-model.md          # Detailed MongoDB schema design, embedding rationale, & ACID
 │   ├── redis-caching.md           # Redis data structures, Cache-Aside pattern, & invalidation
@@ -164,35 +164,7 @@ Call 2 (Cached Hit): [HIT]  -> 20 rooms returned | Latency: 1.550 ms (Redis)
 
 ---
 
-## 6. How I Would Explain This (Viva Notes)
-
-1. **Why an embedded document model was chosen for guest profiles:**
-   - In Savannah Crest Hotels, bookings and payments have a contained, bounded relationship with each guest (1 to 70 bookings per guest). Embedding bookings directly inside `guest_profiles` delivers data co-locality: a single lookup retrieves the guest profile, stay history, and lifetime spend in $O(1)$ time without multi-table joins.
-   - _Alternative rejected:_ Normalised referencing across separate collections, which would require multi-collection `$lookup` joins in MongoDB, defeating the read-performance rationale of a document store.
-
-2. **Why MongoDB cannot replace PostgreSQL for core room reservations:**
-   - Room availability is protected by PostgreSQL's `EXCLUDE USING gist (room_id WITH =, stay WITH &&)`, guaranteeing zero overlapping reservations at the storage kernel level. MongoDB lacks declarative interval exclusion constraints, requiring distributed locks or application coordination that can fail under high contention.
-   - _Alternative rejected:_ Full migration of inventory and reservations to MongoDB.
-
-3. **Why Cache-Aside was chosen over Write-Through caching for Redis:**
-   - Under Cache-Aside, Redis caches only high-demand availability queries (`availability:hotel:X:date:Y`). When a reservation is confirmed in PostgreSQL, the cache is explicitly invalidated (`DEL key`), forcing the next read to fetch fresh state. This guarantees zero risk of desynchronized stale availability caches.
-   - _Alternative rejected:_ Write-Through caching, which adds write latency to every reservation transaction and bloats Redis memory with unread room inventory.
-
-4. **Why Redis room holds use atomic `SET ... NX EX`:**
-   - During room selection, guests receive a temporary 10-minute hold (`hold:room:X:dates:Y`). Using `SET key value NX EX 600` guarantees atomic mutual exclusion: only one concurrent user can acquire the hold, and the key expires automatically if the guest abandons checkout.
-   - _Alternative rejected:_ Multi-command `GET` followed by `SET`, which introduces a race condition where two users can hold the same room.
-
-5. **Why guest reviews reference `hotel_id` rather than embedding within `hotel_catalog`:**
-   - A popular property accumulates tens of thousands of guest reviews over time. Embedding reviews inside the hotel document would cause unbounded document growth, risking MongoDB's 16 MB BSON document limit and triggering expensive WiredTiger memory reallocation.
-   - _Alternative rejected:_ Embedding all reviews inside `hotel_catalog`.
-
-6. **Why PostgreSQL remains the authoritative single source of truth:**
-   - In a polyglot persistence architecture, having multiple writable databases causes split-brain data anomalies. All financial ledgers and room status mutations execute in PostgreSQL first; MongoDB and Redis serve strictly as read projections and low-latency cache layers.
-   - _Alternative rejected:_ Dual-write application patterns where the application writes to PostgreSQL and MongoDB simultaneously without a distributed transaction orchestrator.
-
----
-
-## 7. Execution & Verification Guide
+## 6. Execution & Verification Guide
 
 All targets are fully automated within the root `Makefile`:
 

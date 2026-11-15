@@ -1,7 +1,7 @@
 # Individual Technical Reflection
 
 **MIT 8103 Advanced Database Systems**  
-**Student:** Salvin Okezua  
+**Student:** Tobias Salvin  
 **Project:** Savannah Crest Hotels Management System
 
 ---

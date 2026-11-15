@@ -1,7 +1,7 @@
 # AI Use Declaration
 
 **MIT 8103 Advanced Database Systems**  
-**Student:** Salvin Okezua
+**Student:** Tobias Salvin
 **Coursework:** Savannah Crest Hotels Management System
 
 ---

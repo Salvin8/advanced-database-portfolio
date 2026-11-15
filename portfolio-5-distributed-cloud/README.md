@@ -2,7 +2,7 @@
 
 **Coursework:** Advanced Database Systems (MIT 8103)  
 **System:** Savannah Crest Hotels Management System  
-**Author:** Salvin Okezua  
+**Author:** Tobias Salvin  
 **Technologies:** PostgreSQL 16 (Declarative Partitioning, Streaming Replication), MongoDB 7.0, Redis 7.4, Python 3.12 (psycopg, Saga Orchestration)
 
 ---
@@ -24,7 +24,7 @@ Portfolio 5 investigates, designs, and validates the **Distributed and Cloud Dat
 
 ```
 portfolio-5-distributed-cloud/
-├── README.md                      # Comprehensive Portfolio 5 documentation & viva guide
+├── README.md                      # Comprehensive Portfolio 5 documentation
 ├── docs/
 │   ├── cap-and-pacelc.md          # CAP/PACELC theoretical framework & Lagos-Abuja WAN failure scenario
 │   ├── sharding-strategy.md       # Shard key evaluation, data skew management, & partition pruning
@@ -133,35 +133,7 @@ Live database audit query confirms that after payment refusal, the room hold was
 
 ---
 
-## 5. How I Would Explain This (Viva Notes)
-
-1. **Why `hotel_id` was chosen as the partition key over `booking_date` or `guest_id`:**
-   - Over 90% of operational queries (room availability, front-desk check-in, daily housekeeping) filter strictly by hotel. Partitioning by `hotel_id` guarantees single-partition routing where queries execute entirely on one physical partition (`booking_part_lagos`), achieving 100% partition pruning across the other 5 partitions.
-   - _Alternative rejected:_ Range partitioning by date, which causes severe write skew where the current month's partition absorbs 90% of write traffic while older partitions sit idle.
-
-2. **Why a Distributed Saga was chosen over Two-Phase Commit (2PC):**
-   - Two-Phase Commit is a synchronous blocking protocol: participants acquire database locks during the Prepare phase and hold them until Commit finishes. If an external payment gateway takes 3 seconds to respond, all database locks remain held, crippling system throughput. The Saga pattern executes discrete local transactions, releasing locks immediately and using backward compensating actions if a step fails.
-   - _Alternative rejected:_ Two-Phase Commit (XA/2PC), which causes catastrophic connection pool exhaustion and distributed deadlocks in cloud architectures.
-
-3. **Why the core reservation engine operates as a CP system under CAP:**
-   - During a terrestrial fibre severance between Lagos and Abuja, the system rejects booking transactions on isolated nodes rather than allowing writes. Accepting uncoordinated bookings in two partitioned nodes would cause physical double-bookings for the same room. Consistency is prioritized over availability for inventory and payments.
-   - _Alternative rejected:_ AP eventual consistency for room bookings, which leads to split-brain double-bookings.
-
-4. **Why physical streaming replication is used for HA while logical replication is used for CDC:**
-   - Physical streaming replication streams raw binary WAL records byte-for-byte with near-zero latency, powering the synchronous standby in Lagos (RPO = 0) and asynchronous standby in Abuja. Logical replication decodes row mutations (`INSERT`, `UPDATE`, `DELETE`), acting as a Change Data Capture pipeline to project PostgreSQL bookings into MongoDB read models.
-   - _Alternative rejected:_ Dual application writes to both databases without a replication or CDC stream.
-
-5. **Why an odd-numbered Raft quorum is required to prevent Split-Brain:**
-   - When network partitions occur, standby nodes might assume the primary failed and promote themselves. Using Patroni with etcd requires a strict majority vote ($N/2 + 1$). A node cannot become primary unless it holds the leader lease from a quorum, mathematically preventing two primaries from accepting writes simultaneously.
-   - _Alternative rejected:_ Simple heartbeat-based failover without consensus, which causes catastrophic data divergences.
-
-6. **Why partition pruning was verified using EXPLAIN (ANALYZE, BUFFERS):**
-   - Empirical proof is essential: testing a query with `WHERE hotel_id = 2` confirmed that PostgreSQL scanned only `booking_part_lagos` (1,112 buffer hits), completely omitting the other 5 partitions and reducing disk page reads by 83.3%.
-   - _Alternative rejected:_ Relying on estimated planner costs without verifying actual buffer hits and scanned partition lists.
-
----
-
-## 6. Execution & Verification Guide
+## 5. Execution & Verification Guide
 
 All targets are automated in the root `Makefile`:
 
@@ -173,5 +145,3 @@ make p5
 make p5-partitioning   # Applies declarative partitioning, migrates data, & runs pruning EXPLAIN
 make p5-saga           # Executes the Python Saga Orchestrator across all 3 scenarios
 ```
-     > 2. **Ephemeral Leader Lease:** The primary must renew a 10-second leader lock in etcd. If isolated, its lease expires.
-     > 3. **Fencing (STONITH):** Standby nodes verify with the majority before promoting. When an isolated former primary reconnects, Patroni detects that its lease was lost and uses `pg_rewind` to roll back any un-replicated local WAL blocks and demote it to a replica, ensuring strictly **one primary exists at any point in time**.

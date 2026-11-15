@@ -97,36 +97,3 @@ CONSTRAINT excl_no_overlapping_booking EXCLUDE USING gist (
   Terminal execution of `03_constraint_tests.sql` showing PostgreSQL rejecting overlapping reservations and negative payments.  
   ![Constraint Violation Tests](screenshots/p1-03-constraint-violation-tests.png)
   ![Constraint Violation Tests Part 2](screenshots/p1-03-constraint-violation-tests_2.png)
-
----
-
-## 6. How I Would Explain This (Viva Notes)
-
-1. **Why date ranges and pricing live on `booking_room` rather than `booking`:**
-   - In realistic hotel systems, a single reservation can cover multiple rooms with differing lengths of stay (e.g., a conference attendee booking a deluxe room for 5 days and a standard room for a colleague for 2 days). Placing dates on the booking header would force artificial homogeneity or duplicate booking headers.
-   - *Alternative rejected:* 1:1 booking-to-room table. This breaks multi-room family and corporate reservations into disconnected records.
-
-2. **Why rate per night is snapshotted onto `booking_room`:**
-   - The agreed price at reservation time is a legally binding contract. If management updates holiday rates in `seasonal_rate` next month, historical or existing confirmed bookings must not change their price.
-   - *Alternative rejected:* Dynamic runtime price lookup from `seasonal_rate`. While strictly 3NF-compliant, it creates financial and legal calculation errors when tariffs change.
-
-3. **Why exclusion constraints are superior to application-level checks:**
-   - Application code checking `SELECT COUNT(*) WHERE room_id = X AND stay && Y` followed by an `INSERT` is susceptible to race conditions under concurrent requests. Two concurrent transactions can both read `COUNT = 0` and proceed to insert, causing a double booking. The GiST exclusion constraint enforces serialised mutual exclusion directly inside the PostgreSQL storage engine.
-   - *Alternative rejected:* Application-level validation only, or manual table locking (`LOCK TABLE booking_room IN EXCLUSIVE MODE`), which destroys throughput.
-
-4. **Why room status history is an append-only log:**
-   - Housekeeping workflows require accountability: who cleaned room 302, when was it inspected, and why was it placed out of order? A single status column on `room` destroys operational history. Current status is retrieved with sub-millisecond efficiency using `DISTINCT ON (room_id) ... ORDER BY changed_at DESC` or via the `v_current_room_status` view.
-   - *Alternative rejected:* Single mutable `status` column on `room`.
-
-5. **Why JSONB was chosen for the audit log:**
-   - The `audit_log` table captures changes across various business entities (primarily `booking` status transitions). Using `JSONB` for `old_values` and `new_values` provides schema-agnostic flexibility without needing a separate shadow table for every entity in the database.
-   - *Alternative rejected:* Static column-per-table audit schemas or stringified unstructured text.
-
-6. **Why status enums use CHECK constraints rather than PostgreSQL `CREATE TYPE`:**
-   - Modifying a PostgreSQL enum (`ALTER TYPE ... ADD VALUE`) inside transactional migrations has historical restrictions and requires cluster-wide catalog alterations. `CHECK` constraints are table-specific, self-documenting in DDL, and allow straightforward schema adjustments.
-   - *Alternative rejected:* PostgreSQL user-defined `ENUM` types.
-
-7. **Why foreign keys use deliberate `ON DELETE` behaviours:**
-   - `RESTRICT` is applied to `guest_id`, `hotel_id`, and `room_id` references to prevent accidental deletion of parent records that carry historical accounting or booking records.
-   - `CASCADE` is used from `booking_room` to `check_in_out` and from `room` to `room_status_history` where dependent records have no standalone meaning.
-   - `SET NULL` is used for `staff_id` references so that deactivating or removing an employee does not erase the record of who checked in a guest or inspected a room.

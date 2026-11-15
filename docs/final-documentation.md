@@ -2,7 +2,7 @@
 
 **MIT 8103 Advanced Database Systems**  
 **Individual Technical Portfolio**  
-**Student:** Salvin Okezua  
+**Student:** Tobias Salvin  
 **System:** Savannah Crest Hotels Management System  
 **Date:** November 2026
 
