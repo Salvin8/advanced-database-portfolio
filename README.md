@@ -20,7 +20,7 @@
 | P1 | Database Design and Modelling | Completed |
 | P2 | Query Processing and Optimisation | Completed |
 | P3 | Transactions and Concurrency | Completed |
-| P4 | NoSQL and Advanced Data Models | Not started |
+| P4 | NoSQL and Advanced Data Models | Completed |
 | P5 | Distributed and Cloud Database Exercise | Not started |
 | Final | Documentation and Reflection | Not started |
 
